@@ -1,0 +1,54 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CMake: Configure (Debug)",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--preset",
+        "windows-msys2-debug"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: Build (Debug)",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "windows-msys2-debug"
+      ],
+      "dependsOn": "CMake: Configure (Debug)",
+      "dependsOrder": "sequence",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "CMake: Test (Debug)",
+      "type": "shell",
+      "command": "ctest",
+      "args": [
+        "--preset",
+        "windows-msys2-debug"
+      ],
+      "dependsOn": "CMake: Build (Debug)",
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: Run smoke check",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/windows-msys2-debug/minerva_smoke.exe",
+      "dependsOn": "CMake: Build (Debug)",
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    }
+  ]
+}

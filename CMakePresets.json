@@ -1,0 +1,128 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "visual-studio-debug",
+      "displayName": "Visual Studio 2026 x64 (Debug)",
+      "description": "Build the dependency-free Minerva baseline with the native Visual Studio 2026 toolchain.",
+      "generator": "Visual Studio 18 2026",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "architecture": {
+        "value": "x64",
+        "strategy": "set"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_TESTING": "ON"
+      }
+    },
+    {
+      "name": "visual-studio-release",
+      "displayName": "Visual Studio 2026 x64 (Release)",
+      "inherits": "visual-studio-debug",
+      "binaryDir": "${sourceDir}/build/${presetName}"
+    },
+    {
+      "name": "windows-msys2-debug",
+      "displayName": "Windows MSYS2 UCRT64 (Debug)",
+      "description": "Build the dependency-free Minerva baseline with the installed MSYS2 UCRT64 toolchain.",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "C:/msys64/ucrt64/bin/g++.exe",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_MAKE_PROGRAM": "C:/msys64/usr/bin/make.exe",
+        "BUILD_TESTING": "ON"
+      }
+    },
+    {
+      "name": "windows-msys2-release",
+      "displayName": "Windows MSYS2 UCRT64 (Release)",
+      "inherits": "windows-msys2-debug",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "visual-studio-debug",
+      "displayName": "Build Minerva with Visual Studio (Debug)",
+      "configurePreset": "visual-studio-debug",
+      "configuration": "Debug",
+      "jobs": 0
+    },
+    {
+      "name": "visual-studio-release",
+      "displayName": "Build Minerva with Visual Studio (Release)",
+      "configurePreset": "visual-studio-release",
+      "configuration": "Release",
+      "jobs": 0
+    },
+    {
+      "name": "windows-msys2-debug",
+      "displayName": "Build Minerva baseline (Debug)",
+      "configurePreset": "windows-msys2-debug",
+      "jobs": 0
+    },
+    {
+      "name": "windows-msys2-release",
+      "displayName": "Build Minerva baseline (Release)",
+      "configurePreset": "windows-msys2-release",
+      "jobs": 0
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "visual-studio-debug",
+      "displayName": "Test Minerva with Visual Studio (Debug)",
+      "configurePreset": "visual-studio-debug",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "visual-studio-release",
+      "displayName": "Test Minerva with Visual Studio (Release)",
+      "configurePreset": "visual-studio-release",
+      "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "windows-msys2-debug",
+      "displayName": "Test Minerva baseline (Debug)",
+      "configurePreset": "windows-msys2-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "windows-msys2-release",
+      "displayName": "Test Minerva baseline (Release)",
+      "configurePreset": "windows-msys2-release",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}
