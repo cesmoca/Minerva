@@ -9,7 +9,7 @@
     {
       "name": "visual-studio-debug",
       "displayName": "Visual Studio 2026 x64 (Debug)",
-      "description": "Build the dependency-free Minerva baseline with the native Visual Studio 2026 toolchain.",
+      "description": "Build Minerva with the native Visual Studio 2026 toolchain and vcpkg dependencies.",
       "generator": "Visual Studio 18 2026",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "architecture": {
@@ -23,6 +23,8 @@
       },
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_TOOLCHAIN_FILE": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
         "BUILD_TESTING": "ON"
       }
     },
@@ -35,7 +37,7 @@
     {
       "name": "windows-msys2-debug",
       "displayName": "Windows MSYS2 UCRT64 (Debug)",
-      "description": "Build the dependency-free Minerva baseline with the installed MSYS2 UCRT64 toolchain.",
+      "description": "Build Minerva with the installed MSYS2 UCRT64 toolchain and packages.",
       "generator": "Unix Makefiles",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "condition": {
@@ -48,6 +50,7 @@
         "CMAKE_CXX_COMPILER": "C:/msys64/ucrt64/bin/g++.exe",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "CMAKE_MAKE_PROGRAM": "C:/msys64/usr/bin/make.exe",
+        "CMAKE_PREFIX_PATH": "C:/msys64/ucrt64",
         "BUILD_TESTING": "ON"
       }
     },
@@ -78,13 +81,13 @@
     },
     {
       "name": "windows-msys2-debug",
-      "displayName": "Build Minerva baseline (Debug)",
+      "displayName": "Build Minerva (Debug)",
       "configurePreset": "windows-msys2-debug",
       "jobs": 0
     },
     {
       "name": "windows-msys2-release",
-      "displayName": "Build Minerva baseline (Release)",
+      "displayName": "Build Minerva (Release)",
       "configurePreset": "windows-msys2-release",
       "jobs": 0
     }

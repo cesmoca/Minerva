@@ -16,6 +16,11 @@
 #include <sstream>
 #include <boost/filesystem.hpp>
 
+#ifdef _MSC_VER
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 class Resource {
 protected:
 	boost::filesystem::path _uri;

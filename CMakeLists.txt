@@ -34,14 +34,21 @@ find_program(MINERVA_FLEXPP_EXECUTABLE
 
 include(cmake/MSLGeneration.cmake)
 
-# This first restoration target intentionally contains only code that depends
-# on the C++ standard library. The scene parser, Python, SDL/OpenGL, OpenCV,
-# ARToolKit, Bullet, audio, resource packaging, and model loaders are excluded
-# until the build baseline is stable.
+find_package(Boost 1.70 CONFIG REQUIRED COMPONENTS filesystem)
+set(ZLIB_USE_STATIC_LIBS ON)
+find_package(libzip CONFIG REQUIRED)
+
+# This restoration target grows one dependency-ordered subsystem at a time.
+# The scene parser, Python, SDL/OpenGL, OpenCV, ARToolKit, Bullet, audio, and
+# model loaders remain excluded until their prerequisite phases are stable.
 add_library(minerva_kernel STATIC
     source/Kernel/EndController.cpp
     source/Kernel/Logger.cpp
     source/Kernel/PathPoint.cpp
+    source/Kernel/Resources/Resource.cpp
+    source/Kernel/Resources/ResourceFile.cpp
+    source/Kernel/Resources/ResourceZip.cpp
+    source/Kernel/Resources/ResourcesManager.cpp
     source/Kernel/TrackingMethods/TrackingMethod.cpp
     source/Kernel/Parsers/MSLPreprocessor.cpp
 )
@@ -49,6 +56,12 @@ add_library(minerva_kernel STATIC
 target_include_directories(minerva_kernel
     PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_link_libraries(minerva_kernel
+    PUBLIC
+        Boost::filesystem
+        libzip::zip
 )
 
 if(WIN32)
@@ -100,6 +113,10 @@ if(BUILD_TESTING)
         tests/Kernel/LoggerTests.cpp
         tests/Kernel/PathPointTests.cpp
         tests/Kernel/Parsers/MSLPreprocessorTests.cpp
+        tests/Kernel/Resources/ResourceTests.cpp
+        tests/Kernel/Resources/ResourceFileTests.cpp
+        tests/Kernel/Resources/ResourceZipTests.cpp
+        tests/Kernel/Resources/ResourcesManagerTests.cpp
         tests/Kernel/TrackingMethods/TrackingMethodTests.cpp
     )
     target_link_libraries(minerva_kernel_tests PRIVATE

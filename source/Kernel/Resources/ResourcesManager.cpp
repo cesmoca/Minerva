@@ -92,9 +92,10 @@ void ResourcesManager::pack(const stringstream& finalFile) {
 	list<boost::filesystem::path>::iterator it;
 	for (it = _filesToPack.begin(); it != _filesToPack.end(); ++it) {
 		boost::filesystem::path entry = *it;
+		string entryString = entry.generic_string();
 		Logger::getInstance()->out("[ResourcesManager] Packing :" + entry.generic_string() + "...");
 
-		s = zip_source_file(_dataFile, entry.c_str(), 0, -1);
+		s = zip_source_file(_dataFile, entryString.c_str(), 0, -1);
 		if(s == NULL){
 			Logger::getInstance()->error(
 							"[ResourcesManager] ERROR Locating the file "+entry.generic_string());
@@ -102,7 +103,7 @@ void ResourcesManager::pack(const stringstream& finalFile) {
 			exit(-1);
 		}
 
-		if(zip_add(_dataFile, entry.c_str(), s) == -1) {
+		if(zip_add(_dataFile, entryString.c_str(), s) == -1) {
 			Logger::getInstance()->error(
 							"[ResourcesManager] ERROR adding the file "+entry.generic_string());
 			Logger::getInstance()->out(zip_strerror(_dataFile));
