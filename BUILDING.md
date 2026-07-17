@@ -3,9 +3,9 @@
 Minerva is being restored in stages. The current CMake build intentionally
 compiles only a dependency-free baseline:
 
-- `minerva_core`, containing the logger, application end controller, and MSL
+- `minerva_kernel`, containing the logger, application end controller, and MSL
   include preprocessor.
-- `minerva_smoke`, a small executable that validates the compiled core.
+- `minerva_smoke`, a small executable that validates the compiled kernel.
 
 The generated MSL parser and scanner are committed to the repository, but they
 are not part of a CMake target yet. Their original semantic actions directly
@@ -217,7 +217,7 @@ No phase requires sample scenes, models, scripts, or other application assets.
 
 The order below comes from the current header and implementation dependency
 graph. External libraries listed for a phase must be made available to both
-toolchains before that phase enters `minerva_core`.
+toolchains before that phase enters `minerva_kernel`.
 
 | Phase | Compilation unit or subsystem | Requires from earlier phases | New external requirement |
 | --- | --- | --- | --- |
@@ -320,6 +320,12 @@ target builds `minerva_smoke` and `minerva_kernel_tests`, then runs CTest with
 the active Visual Studio configuration and displays failures in the build
 output. The generator-provided `RUN_TESTS` target performs the same CTest run,
 but `minerva_tests` is the project-specific target to use.
+
+The kernel unit tests use GoogleTest 1.17.0. When `BUILD_TESTING` is enabled,
+CMake first uses an installed GoogleTest package if one is available;
+otherwise it downloads the pinned source into the selected build directory.
+This does not install GoogleTest system-wide. The first test-enabled configure
+therefore requires network access when GoogleTest is not already installed.
 
 CTest dashboard projects such as `Continuous`, `Nightly`, and `Experimental`
 are intentionally disabled. `ALL_BUILD`, `RUN_TESTS`, and `ZERO_CHECK` are
