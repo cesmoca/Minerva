@@ -7,9 +7,219 @@ compiles only a dependency-free baseline:
   include preprocessor.
 - `minerva_smoke`, a small executable that validates the compiled core.
 
-The original renderer, camera, tracking, physics, scripting, audio, resource
-packaging, generated MSL parser, and model-loading code are not part of the
+The generated MSL parser and scanner are committed to the repository, but they
+are not part of a CMake target yet. Their original semantic actions directly
+depend on the world, resource, MAO, MLB, and physics domains. Keeping the files
+out of the baseline target avoids accidentally activating those subsystems.
+
+The renderer, camera, tracking, physics, scripting, audio, resource packaging,
+generated MSL parser implementation, and model-loading code are not part of the
 target yet.
+
+## Regenerating the MSL parser and scanner
+
+Normal Visual Studio and CMake builds use the committed generated files and do
+not require parser-generator tools. Follow this section only when
+`MSLParser.y` or `MSLScanner.l` changes, or when verifying that the historical
+sources can still be generated.
+
+The grammar uses the obsolete Bison++ dialect, not the current GNU Bison C++
+interface. The verified tool versions are:
+
+- Bison++ source package 1.21.11 with the Debian 1.21.11-5 portability patches.
+- Flex/Flex++ 2.6.4.
+- MSYS2 UCRT64 GCC; GCC 16.1.0 was used for the verified Bison++ build.
+
+Bison++ has stale embedded version text and prints `1.21.9-1` when invoked with
+`-V`. The downloaded source and Debian changelog are nevertheless version
+1.21.11. Verify the archive hashes below instead of relying on that banner.
+
+### 1. Install the MSYS2 build tools
+
+Open an **MSYS2 UCRT64** terminal and run:
+
+```sh
+pacman --noconfirm -S --needed flex patch make mingw-w64-ucrt-x86_64-gcc
+```
+
+The `flex` package installs both `flex` and `flex++`. Bison++ is not available
+as an MSYS2 package and must be built from source.
+
+### 2. Download the verified Bison++ source
+
+Use an empty disposable directory. These commands deliberately keep the old
+generator outside the repository:
+
+```sh
+mkdir -p /c/tmp/minerva-parser-tools
+cd /c/tmp/minerva-parser-tools
+
+curl.exe -fL https://deb.debian.org/debian/pool/main/b/bison++/bison++_1.21.11.orig.tar.gz -o bison++_1.21.11.orig.tar.gz
+curl.exe -fL https://deb.debian.org/debian/pool/main/b/bison++/bison++_1.21.11-5.debian.tar.xz -o bison++_1.21.11-5.debian.tar.xz
+curl.exe -fL https://deb.debian.org/debian/pool/main/b/bison++/bison++_1.21.11-5.dsc -o bison++_1.21.11-5.dsc
+```
+
+Calculate the SHA-256 hashes:
+
+```sh
+sha256sum bison++_1.21.11.orig.tar.gz bison++_1.21.11-5.debian.tar.xz
+```
+
+The results must be:
+
+```text
+d274bd25b354b50fd64884883ee46aba22e17728ee190f063db0b7254b662517  bison++_1.21.11.orig.tar.gz
+cb737fb2ce79acc968b9cc183b4d77eae9a30daed9d1fb170349b5591dd32de5  bison++_1.21.11-5.debian.tar.xz
+```
+
+The same hashes are recorded in the downloaded Debian `.dsc` descriptor.
+
+### 3. Extract and patch Bison++
+
+The original tarball contains a Unix `bison` symbolic link that Windows may
+refuse to create. Exclude that optional alias during extraction:
+
+```sh
+cd /c/tmp/minerva-parser-tools
+tar -xzf bison++_1.21.11.orig.tar.gz --exclude=bison++-1.21.11/bison
+tar -xJf bison++_1.21.11-5.debian.tar.xz -C bison++-1.21.11
+cd bison++-1.21.11
+```
+
+Apply Debian's published portability patches in their declared order:
+
+```sh
+while read patch_name; do
+    patch -p1 < debian/patches/${patch_name}
+done < debian/patches/series
+```
+
+### 4. Compile and install Bison++ into the disposable directory
+
+Configure and compile with the UCRT64 compiler:
+
+```sh
+export PATH=/ucrt64/bin:/usr/bin
+./configure --prefix=/c/tmp/minerva-parser-tools/install
+make -j2
+```
+
+The build emits many warnings caused by the generator's 1990s C++ source, but
+it completes with the current compiler. The old install hook expects the
+excluded `bison` alias, so provide a copy before installing:
+
+```sh
+cp bison++.exe bison.exe
+make install
+```
+
+Verify both generators:
+
+```sh
+/c/tmp/minerva-parser-tools/install/bin/bison++ -V
+flex++ --version
+```
+
+Expected version output includes:
+
+```text
+bison++ Version 1.21.9-1
+flex++ 2.6.4
+```
+
+### 5. Generate Minerva's MSL C++ files
+
+Stay in the MSYS2 UCRT64 terminal. Change to the repository root and keep
+`/ucrt64/bin` on `PATH` because the locally built Bison++ executable needs the
+UCRT runtime DLLs:
+
+```sh
+cd /c/path/to/Minerva
+export PATH=/ucrt64/bin:/usr/bin
+```
+
+Generate the parser implementation and header:
+
+```sh
+/c/tmp/minerva-parser-tools/install/bin/bison++ \
+    -d \
+    -hinclude/Kernel/Parsers/MSLParser.h \
+    -o source/Kernel/Parsers/MSLParser.cpp \
+    source/Kernel/Parsers/MSLParser.y
+```
+
+Generate the C++ scanner:
+
+```sh
+flex++ \
+    -d \
+    -osource/Kernel/Parsers/MSLScanner.cpp \
+    source/Kernel/Parsers/MSLScanner.l
+```
+
+These commands create or replace exactly these committed files:
+
+```text
+include/Kernel/Parsers/MSLParser.h
+source/Kernel/Parsers/MSLParser.cpp
+source/Kernel/Parsers/MSLScanner.cpp
+```
+
+The verified grammar generation reports one empty typed rule, one useless
+nonterminal/rule, six shift/reduce conflicts, and forty reduce/reduce
+conflicts. Those diagnostics come from the existing grammar and are not a
+generator failure.
+
+Run `git diff` after regeneration. Do not add the generated sources to a CMake
+target in isolation: compiling their semantic actions also requires the World,
+ResourcesManager, MAOFactory, MLBFactory, and PhysicsController dependency
+chains. They will be activated when those engine domains have reached the
+gradual build.
+
+## Gradual compilation roadmap
+
+The restoration build should remain cumulative: a phase is added only after
+all earlier phases compile and test with both the Visual Studio and MSYS2
+presets. The goal is compilation compatibility, not redesign or new behavior.
+No phase requires sample scenes, models, scripts, or other application assets.
+
+The order below comes from the current header and implementation dependency
+graph. External libraries listed for a phase must be made available to both
+toolchains before that phase enters `minerva_core`.
+
+| Phase | Compilation unit or subsystem | Requires from earlier phases | New external requirement |
+| --- | --- | --- | --- |
+| 0 | Current baseline: `Logger`, `EndController`, and `MSLPreprocessor` | None | None |
+| 1 | Dependency-free leaves: `PathPoint` and the abstract `TrackingMethod` state class | Phase 0 | None |
+| 2 | Resource I/O: `Resource`, `ResourceFile`, then `ResourceZip` and `ResourcesManager` | `Logger` and `Singleton` from phase 0 | Boost.Filesystem and libzip |
+| 3 | Value/property types and camera foundation: `MAOValue`, `MAOProperty`, `VideoSource`, and `VideoFactory` | `Logger`, `Singleton` | Current OpenCV headers and libraries; compatibility for the removed `cv.h` and `highgui.h` entry points |
+| 4 | Python binding foundation: `WrapperTypes` | Standard-library baseline | A buildable embedded Python and matching Boost.Python. The original code targets Python 2.7, so the least-change viable toolchain must be established here |
+| 5 | Core MAO objects: `MAO`, `MAOPositionator3D`, `MAOMark`, and `MAOMarksGroup` | Resources, value/property types, Python binding foundation | SDL headers plus the OpenCV and Boost.Python dependencies already introduced |
+| 6 | Rendering objects: 2D base/image/text and 3D base/line/path/model classes | Core MAO, `PathPoint`, and `VideoFactory` | SDL, SDL_image, SDL_ttf, desktop compatibility OpenGL/GLU/GLUT, and Bullet collision headers for the 3D base |
+| 7 | Model loading: parser base, OreJ, OBJ, and 3DS loaders | Resources and `MAORenderable3DModel` | SDL_image/OpenGL already introduced, plus lib3ds for the 3DS loader |
+| 8 | AR tracking: `TrackingMethodARTK` and `TrackingMethodFactory` | Abstract tracking, resources, video, marks, and marker groups | Vendored ARToolKit 2.72.1 and its OpenGL-facing support |
+| 9 | `MAOFactory` | All MAO classes, model loaders, and tracking factory | No new library beyond earlier phases |
+| 10 | Physics: `GLDebugDrawer`, `PhysicObject`, `PhysicDynamicObject`, and `PhysicsController` | 3D MAOs and `MAOFactory` | Vendored Bullet 2.78 and OpenGL; only compiler-required 64-bit compatibility fixes should be made |
+| 11 | Logic-brick foundation: `MLB`, base sensor/controller/actuator classes, simple sensors, Boolean controllers, and MAO-only actuators | Core/renderable MAOs, properties, resources, and Python foundation | No new library for the purely logical bricks |
+| 12 | Platform logic bricks and input: keyboard/input controller, sound actuator, script controller, collision sensor, and dynamic-object actuator | Logic-brick foundation, physics, `MAOFactory`, and Python binding foundation | SDL event handling, SDL_mixer, and embedded Python already introduced |
+| 13 | `MLBFactory` and `GameLogicController` | Every MLB class, `MAOFactory`, physics, input, and Python wrapper support | No new library beyond earlier phases |
+| 14 | `World` | Rendering classes, video factory, MAO factory, physics, SDL, and OpenGL | SDL_mixer and the established rendering stack |
+| 15 | Generated MSL parser/scanner plus `MSLProperties` | `World`, resources, both factories, physics, MAO values/properties, OpenCV, Bullet, and FlexLexer headers | Flex runtime header; the generators themselves are not required for normal builds |
+| 16 | Embedded `MGE` module and `MPYWrapper` | MAO/MLB factories, script controller, and all registered wrapper types | Embedded Python and Boost.Python already introduced |
+| 17 | Original `minerva` authoring executable | World, resources, MSL preprocessor/parser, Python wrapper, and packaging | Boost.Filesystem and libzip already introduced |
+| 18 | Original `player` runtime executable | All runtime controllers, world, tracking, video, physics, MSL, and Python | Complete dependency set from earlier phases |
+
+Phase 1 is the next safest implementation step because both classes include
+only their own project headers and the C++ standard library. Phases 2 and 3 are
+independent of one another at the source level, but resources are listed first
+because they are a prerequisite for the central MAO, tracking, parser, and
+packaging paths.
+
+Some later phases are necessarily clusters. In particular, the original
+factory, physics, world, logic-brick, and parser headers form cycles or include
+large concrete class sets. Splitting those cycles would be an architectural
+refactor, so the restoration plan defers the cluster until all of its original
+dependencies compile instead of introducing temporary substitutes.
 
 ## Visual Studio Code
 
