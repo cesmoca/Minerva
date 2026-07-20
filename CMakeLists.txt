@@ -53,6 +53,7 @@ add_library(minerva_kernel STATIC
     source/Kernel/Resources/ResourcesManager.cpp
     source/Kernel/TrackingMethods/TrackingMethod.cpp
     source/Kernel/Parsers/MSLPreprocessor.cpp
+    source/MAO/MAOProperty.cpp
     source/MAO/MAOValue.cpp
 )
 
@@ -123,6 +124,7 @@ if(BUILD_TESTING)
         tests/Kernel/Resources/ResourceZipTests.cpp
         tests/Kernel/Resources/ResourcesManagerTests.cpp
         tests/Kernel/TrackingMethods/TrackingMethodTests.cpp
+        tests/MAO/MAOPropertyTests.cpp
         tests/MAO/MAOValueTests.cpp
     )
     target_link_libraries(minerva_kernel_tests PRIVATE
