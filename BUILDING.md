@@ -2,11 +2,12 @@
 
 Minerva is being restored in stages. The current CMake build compiles the
 completed standard-library baseline and resource I/O phase plus the
-value/property and camera foundation:
+value/property, camera, and Python binding foundations:
 
 - `minerva_kernel`, containing the logger, application end controller, path and
   abstract tracking state, MSL include preprocessor, resource classes,
-  `MAOValue`, `MAOProperty`, `VideoSource`, and `VideoFactory`.
+  `MAOValue`, `MAOProperty`, `VideoSource`, `VideoFactory`, and
+  `WrapperTypes`.
 - `minerva_smoke`, a small executable that validates the compiled kernel.
 
 The generated MSL parser and scanner are committed to the repository, but they
@@ -21,15 +22,16 @@ parser implementation, and model-loading code are not part of the target yet.
 
 The resource phase requires Boost.Filesystem and libzip; libzip also requires
 zlib and may use bzip2. The value and property classes require OpenCV Core;
-`VideoSource` also requires OpenCV Video I/O. CMake uses installed packages
-and does not download these production dependencies.
+`VideoSource` also requires OpenCV Video I/O. `WrapperTypes` requires
+embedded Python and matching Boost.Python. CMake uses installed packages and
+does not download these production dependencies.
 
 For Visual Studio, the presets use a standalone vcpkg installation at
 `C:\vcpkg` and the `x64-windows-static-md` triplet. Install the active packages
 with:
 
 ```powershell
-C:\vcpkg\vcpkg.exe install boost-filesystem libzip gtest opencv4[core] --triplet x64-windows-static-md
+C:\vcpkg\vcpkg.exe install boost-filesystem boost-python libzip gtest opencv4[core] --triplet x64-windows-static-md
 ```
 
 The Visual Studio preset supplies vcpkg's CMake toolchain file and triplet so
@@ -38,13 +40,14 @@ Debug and Release dependencies use the matching MSVC runtime libraries.
 For MSYS2 UCRT64, install the matching packages with:
 
 ```powershell
-C:\msys64\usr\bin\pacman.exe --noconfirm -S --needed mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-gtest mingw-w64-ucrt-x86_64-opencv
+C:\msys64\usr\bin\pacman.exe --noconfirm -S --needed mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-gtest mingw-w64-ucrt-x86_64-opencv
 ```
 
 The MSYS2 preset restricts package discovery to `C:\msys64\ucrt64`, preventing
 MSVC and MinGW packages from being mixed. GoogleTest retains its existing
-find-first, pinned FetchContent fallback, but Boost.Filesystem, libzip, and
-OpenCV Core and Video I/O must be installed before configuration.
+find-first, pinned FetchContent fallback, but Boost.Filesystem, Boost.Python,
+embedded Python, libzip, and OpenCV Core and Video I/O must be installed before
+configuration.
 
 ## Regenerating the MSL parser and scanner
 
@@ -255,7 +258,7 @@ toolchains before that phase enters `minerva_kernel`.
 | 1 | Dependency-free leaves: `PathPoint` and the abstract `TrackingMethod` state class | Phase 0 | None |
 | 2 | Current resource I/O: `Resource`, `ResourceFile`, `ResourceZip`, and `ResourcesManager` | `Logger` and `Singleton` from phase 0 | Boost.Filesystem and libzip |
 | 3 | Current value/property and camera foundation: `MAOValue`, `MAOProperty`, `VideoSource`, and `VideoFactory` | `Logger`, `Singleton` | OpenCV Core and Video I/O |
-| 4 | Python binding foundation: `WrapperTypes` | Standard-library baseline | A buildable embedded Python and matching Boost.Python. The original code targets Python 2.7, so the least-change viable toolchain must be established here |
+| 4 | Current Python binding foundation: `WrapperTypes` | Standard-library baseline | Embedded Python and matching Boost.Python |
 | 5 | Core MAO objects: `MAO`, `MAOPositionator3D`, `MAOMark`, and `MAOMarksGroup` | Resources, value/property types, Python binding foundation | SDL headers plus the OpenCV and Boost.Python dependencies already introduced |
 | 6 | Rendering objects: 2D base/image/text and 3D base/line/path/model classes | Core MAO, `PathPoint`, and `VideoFactory` | SDL, SDL_image, SDL_ttf, desktop compatibility OpenGL/GLU/GLUT, and Bullet collision headers for the 3D base |
 | 7 | Model loading: parser base, OreJ, OBJ, and 3DS loaders | Resources and `MAORenderable3DModel` | SDL_image/OpenGL already introduced, plus lib3ds for the 3DS loader |
@@ -271,8 +274,8 @@ toolchains before that phase enters `minerva_kernel`.
 | 17 | Original `minerva` authoring executable | World, resources, MSL preprocessor/parser, Python wrapper, and packaging | Boost.Filesystem and libzip already introduced |
 | 18 | Original `player` runtime executable | All runtime controllers, world, tracking, video, physics, MSL, and Python | Complete dependency set from earlier phases |
 
-Phases 2 and 3 are complete. The Python binding foundation in phase 4 is the
-next dependency investigation.
+Phases 2 through 4 are complete. The core MAO objects in phase 5 are the next
+dependency investigation.
 
 Some later phases are necessarily clusters. In particular, the original
 factory, physics, world, logic-brick, and parser headers form cycles or include
@@ -405,6 +408,6 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Boost.Filesystem, libzip, and the OpenCV Core and Video I/O components must be
-discoverable by CMake. For custom build trees, pass the appropriate vcpkg
-toolchain or package prefix described above.
+Boost.Filesystem, Boost.Python, embedded Python, libzip, and the OpenCV Core and
+Video I/O components must be discoverable by CMake. For custom build trees,
+pass the appropriate vcpkg toolchain or package prefix described above.

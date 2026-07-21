@@ -34,7 +34,7 @@ find_program(MINERVA_FLEXPP_EXECUTABLE
 
 include(cmake/MSLGeneration.cmake)
 
-find_package(Boost 1.70 CONFIG REQUIRED COMPONENTS filesystem)
+find_package(Boost 1.70 CONFIG REQUIRED COMPONENTS filesystem python)
 set(ZLIB_USE_STATIC_LIBS ON)
 find_package(libzip CONFIG REQUIRED)
 find_package(OpenCV 4 REQUIRED COMPONENTS core videoio)
@@ -57,6 +57,7 @@ add_library(minerva_kernel STATIC
     source/Kernel/VideoSource.cpp
     source/MAO/MAOProperty.cpp
     source/MAO/MAOValue.cpp
+    source/MPY/WrapperTypes.cpp
 )
 
 target_include_directories(minerva_kernel
@@ -68,6 +69,7 @@ target_include_directories(minerva_kernel
 target_link_libraries(minerva_kernel
     PUBLIC
         Boost::filesystem
+        Boost::python
         libzip::zip
         ${OpenCV_LIBS}
 )
@@ -130,6 +132,7 @@ if(BUILD_TESTING)
         tests/Kernel/VideoSourceTests.cpp
         tests/MAO/MAOPropertyTests.cpp
         tests/MAO/MAOValueTests.cpp
+        tests/MPY/WrapperTypesTests.cpp
     )
     target_link_libraries(minerva_kernel_tests PRIVATE
         minerva_kernel

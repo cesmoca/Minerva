@@ -8,7 +8,7 @@
 #ifndef WRAPPERTYPES_H_
 #define WRAPPERTYPES_H_
 
-#include <python.hpp>
+#include <boost/python.hpp>
 #include <vector>
 
 void IndexError();
