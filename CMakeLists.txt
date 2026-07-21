@@ -56,6 +56,7 @@ add_library(minerva_kernel STATIC
     source/Kernel/Parsers/MSLPreprocessor.cpp
     source/Kernel/VideoSource.cpp
     source/MAO/MAO.cpp
+    source/MAO/MAOPositionator3D.cpp
     source/MAO/MAOProperty.cpp
     source/MAO/MAOValue.cpp
     source/MPY/WrapperTypes.cpp
@@ -132,6 +133,7 @@ if(BUILD_TESTING)
         tests/Kernel/TrackingMethods/TrackingMethodTests.cpp
         tests/Kernel/VideoSourceTests.cpp
         tests/MAO/MAOTests.cpp
+        tests/MAO/MAOPositionator3DTests.cpp
         tests/MAO/MAOPropertyTests.cpp
         tests/MAO/MAOValueTests.cpp
         tests/MPY/WrapperTypesTests.cpp
