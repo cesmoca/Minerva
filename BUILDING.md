@@ -1,12 +1,12 @@
 # Building Minerva
 
 Minerva is being restored in stages. The current CMake build compiles the
-completed standard-library baseline and resource I/O phase plus the value,
-property, and camera-source portion of the OpenCV foundation:
+completed standard-library baseline and resource I/O phase plus the
+value/property and camera foundation:
 
 - `minerva_kernel`, containing the logger, application end controller, path and
   abstract tracking state, MSL include preprocessor, resource classes,
-  `MAOValue`, `MAOProperty`, and `VideoSource`.
+  `MAOValue`, `MAOProperty`, `VideoSource`, and `VideoFactory`.
 - `minerva_smoke`, a small executable that validates the compiled kernel.
 
 The generated MSL parser and scanner are committed to the repository, but they
@@ -14,9 +14,8 @@ are not part of a CMake target yet. Their original semantic actions directly
 depend on the world, resource, MAO, MLB, and physics domains. Keeping the files
 out of the baseline target avoids accidentally activating those subsystems.
 
-The renderer, video factory, concrete tracking, physics, scripting, audio,
-generated MSL parser implementation, and model-loading code are not part of the
-target yet.
+The renderer, concrete tracking, physics, scripting, audio, generated MSL
+parser implementation, and model-loading code are not part of the target yet.
 
 ## Active third-party dependencies
 
@@ -255,7 +254,7 @@ toolchains before that phase enters `minerva_kernel`.
 | 0 | Current baseline: `Logger`, `EndController`, and `MSLPreprocessor` | None | None |
 | 1 | Dependency-free leaves: `PathPoint` and the abstract `TrackingMethod` state class | Phase 0 | None |
 | 2 | Current resource I/O: `Resource`, `ResourceFile`, `ResourceZip`, and `ResourcesManager` | `Logger` and `Singleton` from phase 0 | Boost.Filesystem and libzip |
-| 3 | Value/property types and camera foundation: `MAOValue`, `MAOProperty`, and `VideoSource` are active; `VideoFactory` remains | `Logger`, `Singleton` | OpenCV Core and Video I/O are active |
+| 3 | Current value/property and camera foundation: `MAOValue`, `MAOProperty`, `VideoSource`, and `VideoFactory` | `Logger`, `Singleton` | OpenCV Core and Video I/O |
 | 4 | Python binding foundation: `WrapperTypes` | Standard-library baseline | A buildable embedded Python and matching Boost.Python. The original code targets Python 2.7, so the least-change viable toolchain must be established here |
 | 5 | Core MAO objects: `MAO`, `MAOPositionator3D`, `MAOMark`, and `MAOMarksGroup` | Resources, value/property types, Python binding foundation | SDL headers plus the OpenCV and Boost.Python dependencies already introduced |
 | 6 | Rendering objects: 2D base/image/text and 3D base/line/path/model classes | Core MAO, `PathPoint`, and `VideoFactory` | SDL, SDL_image, SDL_ttf, desktop compatibility OpenGL/GLU/GLUT, and Bullet collision headers for the 3D base |
@@ -272,8 +271,8 @@ toolchains before that phase enters `minerva_kernel`.
 | 17 | Original `minerva` authoring executable | World, resources, MSL preprocessor/parser, Python wrapper, and packaging | Boost.Filesystem and libzip already introduced |
 | 18 | Original `player` runtime executable | All runtime controllers, world, tracking, video, physics, MSL, and Python | Complete dependency set from earlier phases |
 
-Phase 2 and the value/property and `VideoSource` portions of phase 3 are
-complete. `VideoFactory` is the remaining phase-3 unit.
+Phases 2 and 3 are complete. The Python binding foundation in phase 4 is the
+next dependency investigation.
 
 Some later phases are necessarily clusters. In particular, the original
 factory, physics, world, logic-brick, and parser headers form cycles or include

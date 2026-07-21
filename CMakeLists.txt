@@ -44,6 +44,7 @@ find_package(OpenCV 4 REQUIRED COMPONENTS core videoio)
 # Bullet, audio, and model loaders remain excluded until their prerequisite
 # phases are stable.
 add_library(minerva_kernel STATIC
+    source/Factories/VideoFactory.cpp
     source/Kernel/EndController.cpp
     source/Kernel/Logger.cpp
     source/Kernel/PathPoint.cpp
@@ -116,6 +117,7 @@ if(BUILD_TESTING)
     endif()
 
     add_executable(minerva_kernel_tests
+        tests/Factories/VideoFactoryTests.cpp
         tests/Kernel/EndControllerTests.cpp
         tests/Kernel/LoggerTests.cpp
         tests/Kernel/PathPointTests.cpp
