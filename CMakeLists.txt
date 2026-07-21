@@ -37,12 +37,12 @@ include(cmake/MSLGeneration.cmake)
 find_package(Boost 1.70 CONFIG REQUIRED COMPONENTS filesystem)
 set(ZLIB_USE_STATIC_LIBS ON)
 find_package(libzip CONFIG REQUIRED)
-find_package(OpenCV 4 REQUIRED COMPONENTS core)
+find_package(OpenCV 4 REQUIRED COMPONENTS core videoio)
 
 # This restoration target grows one dependency-ordered subsystem at a time.
-# The scene parser, Python, SDL/OpenGL, OpenCV video modules, ARToolKit, Bullet,
-# audio, and model loaders remain excluded until their prerequisite phases are
-# stable.
+# The scene parser, Python, SDL/OpenGL, additional OpenCV modules, ARToolKit,
+# Bullet, audio, and model loaders remain excluded until their prerequisite
+# phases are stable.
 add_library(minerva_kernel STATIC
     source/Kernel/EndController.cpp
     source/Kernel/Logger.cpp
@@ -53,6 +53,7 @@ add_library(minerva_kernel STATIC
     source/Kernel/Resources/ResourcesManager.cpp
     source/Kernel/TrackingMethods/TrackingMethod.cpp
     source/Kernel/Parsers/MSLPreprocessor.cpp
+    source/Kernel/VideoSource.cpp
     source/MAO/MAOProperty.cpp
     source/MAO/MAOValue.cpp
 )
@@ -124,6 +125,7 @@ if(BUILD_TESTING)
         tests/Kernel/Resources/ResourceZipTests.cpp
         tests/Kernel/Resources/ResourcesManagerTests.cpp
         tests/Kernel/TrackingMethods/TrackingMethodTests.cpp
+        tests/Kernel/VideoSourceTests.cpp
         tests/MAO/MAOPropertyTests.cpp
         tests/MAO/MAOValueTests.cpp
     )

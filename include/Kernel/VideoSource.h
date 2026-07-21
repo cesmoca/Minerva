@@ -8,7 +8,8 @@
 #ifndef VIDEOSOURCE_H_
 #define VIDEOSOURCE_H_
 
-#include <highgui.h>
+#include <opencv2/core.hpp>
+#include <opencv2/videoio.hpp>
 #include <Kernel/Logger.h>
 #include <string>
 

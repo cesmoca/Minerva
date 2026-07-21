@@ -19,8 +19,8 @@ VideoSource::VideoSource(const std::string& name, const int& nDevice, int width,
 	_lastFrame = new cv::Mat();
 	_width = width;
 	_height = height;
-	_cam->set(CV_CAP_PROP_FRAME_WIDTH,_width);
-	_cam->set(CV_CAP_PROP_FRAME_HEIGHT,_height);
+	_cam->set(cv::CAP_PROP_FRAME_WIDTH,_width);
+	_cam->set(cv::CAP_PROP_FRAME_HEIGHT,_height);
 	//_width = _cam->get(CV_CAP_PROP_FRAME_WIDTH);
 	//_height = _cam->get(CV_CAP_PROP_FRAME_HEIGHT);
 	//_fps = _cam.get(CV_CAP_PROP_FPS);
