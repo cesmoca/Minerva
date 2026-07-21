@@ -11,8 +11,7 @@
 #include <MAO/MAO.h>
 #include <Kernel/Logger.h>
 
-#include <python.hpp>
-#include <filesystem.hpp>
+#include <boost/python.hpp>
 #include <MPY/WrapperTypes.h>
 #include <Kernel/Resources/ResourcesManager.h>
 

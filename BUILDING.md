@@ -248,41 +248,161 @@ all earlier phases compile and test with both the Visual Studio and MSYS2
 presets. The goal is compilation compatibility, not redesign or new behavior.
 No phase requires sample scenes, models, scripts, or other application assets.
 
-The order below comes from the current header and implementation dependency
-graph. External libraries listed for a phase must be made available to both
-toolchains before that phase enters `minerva_kernel`.
+Commits through `d2a3d90 Compile and test MAOMark` form the committed baseline.
+Bundle A is active and verified in the current working tree; Bundle B is next.
+The remaining roadmap is grouped by external dependency transitions instead of
+single translation units. Every bundle must compile and test as one change on
+both toolchains before introducing the next dependency set. A bundle marked
+"none" uses only libraries activated by earlier bundles.
 
-| Phase | Compilation unit or subsystem | Requires from earlier phases | New external requirement |
-| --- | --- | --- | --- |
-| 0 | Current baseline: `Logger`, `EndController`, and `MSLPreprocessor` | None | None |
-| 1 | Dependency-free leaves: `PathPoint` and the abstract `TrackingMethod` state class | Phase 0 | None |
-| 2 | Current resource I/O: `Resource`, `ResourceFile`, `ResourceZip`, and `ResourcesManager` | `Logger` and `Singleton` from phase 0 | Boost.Filesystem and libzip |
-| 3 | Current value/property and camera foundation: `MAOValue`, `MAOProperty`, `VideoSource`, and `VideoFactory` | `Logger`, `Singleton` | OpenCV Core and Video I/O |
-| 4 | Current Python binding foundation: `WrapperTypes` | Standard-library baseline | Embedded Python and matching Boost.Python |
-| 5 | Core MAO objects: `MAO`, `MAOPositionator3D`, and `MAOMark` are active; `MAOMarksGroup` remains | Resources, value/property types, Python binding foundation | No new dependency beyond the active OpenCV and Boost.Python foundations |
-| 6 | Rendering objects: 2D base/image/text and 3D base/line/path/model classes | Core MAO, `PathPoint`, and `VideoFactory` | SDL, SDL_image, SDL_ttf, desktop compatibility OpenGL/GLU/GLUT, and Bullet collision headers for the 3D base |
-| 7 | Model loading: parser base, OreJ, OBJ, and 3DS loaders | Resources and `MAORenderable3DModel` | SDL_image/OpenGL already introduced, plus lib3ds for the 3DS loader |
-| 8 | AR tracking: `TrackingMethodARTK` and `TrackingMethodFactory` | Abstract tracking, resources, video, marks, and marker groups | Vendored ARToolKit 2.72.1 and its OpenGL-facing support |
-| 9 | `MAOFactory` | All MAO classes, model loaders, and tracking factory | No new library beyond earlier phases |
-| 10 | Physics: `GLDebugDrawer`, `PhysicObject`, `PhysicDynamicObject`, and `PhysicsController` | 3D MAOs and `MAOFactory` | Vendored Bullet 2.78 and OpenGL; only compiler-required 64-bit compatibility fixes should be made |
-| 11 | Logic-brick foundation: `MLB`, base sensor/controller/actuator classes, simple sensors, Boolean controllers, and MAO-only actuators | Core/renderable MAOs, properties, resources, and Python foundation | No new library for the purely logical bricks |
-| 12 | Platform logic bricks and input: keyboard/input controller, sound actuator, script controller, collision sensor, and dynamic-object actuator | Logic-brick foundation, physics, `MAOFactory`, and Python binding foundation | SDL event handling, SDL_mixer, and embedded Python already introduced |
-| 13 | `MLBFactory` and `GameLogicController` | Every MLB class, `MAOFactory`, physics, input, and Python wrapper support | No new library beyond earlier phases |
-| 14 | `World` | Rendering classes, video factory, MAO factory, physics, SDL, and OpenGL | SDL_mixer and the established rendering stack |
-| 15 | Generated MSL parser/scanner plus `MSLProperties` | `World`, resources, both factories, physics, MAO values/properties, OpenCV, Bullet, and FlexLexer headers | Flex runtime header; the generators themselves are not required for normal builds |
-| 16 | Embedded `MGE` module and `MPYWrapper` | MAO/MLB factories, script controller, and all registered wrapper types | Embedded Python and Boost.Python already introduced |
-| 17 | Original `minerva` authoring executable | World, resources, MSL preprocessor/parser, Python wrapper, and packaging | Boost.Filesystem and libzip already introduced |
-| 18 | Original `player` runtime executable | All runtime controllers, world, tracking, video, physics, MSL, and Python | Complete dependency set from earlier phases |
+The fourteen bundles below contain all 60 remaining original translation units
+exactly once.
 
-Phases 2 through 4 are complete, and `MAO`, `MAOPositionator3D`, plus `MAOMark`
-are active in phase 5. `MAOMarksGroup` is the next dependency-ordered phase-5
-unit.
+### Bundle A: current-stack closure (20 units)
 
-Some later phases are necessarily clusters. In particular, the original
-factory, physics, world, logic-brick, and parser headers form cycles or include
-large concrete class sets. Splitting those cycles would be an architectural
-refactor, so the restoration plan defers the cluster until all of its original
-dependencies compile instead of introducing temporary substitutes.
+New external requirement: none. This bundle is active and verified in the
+current working tree.
+
+- Core MAO: `MAOMarksGroup.cpp`.
+- Logic base: `MLB.cpp`, `MLBSensor.cpp`, `MLBSensorActuator.cpp`, and
+  `MLBActuator.cpp`.
+- Current-stack sensors: `MLBSensorAlways.cpp`, `MLBSensorDelay.cpp`,
+  `MLBSensorProperty.cpp`, and `MLBSensorRandom.cpp`.
+- Current-stack actuators: `MLBActuatorAng.cpp`, `MLBActuatorDistance.cpp`,
+  `MLBActuatorProperty.cpp`, `MLBActuatorQuitApp.cpp`,
+  `MLBActuatorRandom.cpp`, and `MLBActuatorRelativePose.cpp`.
+- Boolean control: `MLBController.cpp`, `MLBControllerAND.cpp`,
+  `MLBControllerNAND.cpp`, `MLBControllerNOR.cpp`, and `MLBControllerOR.cpp`.
+
+These units use only the standard library and the already-active
+Boost.Filesystem, embedded Python/Boost.Python, OpenCV Core, resource, property,
+and MAO foundations. Obsolete include spellings may still require
+compiler-proven compatibility edits, but no package installation is needed.
+
+### Bundle B: SDL input foundation (2 units)
+
+New external requirement: an SDL 1.2-compatible development/runtime package.
+
+- `InputEventController.cpp`.
+- `MLBSensorKeyboard.cpp`.
+
+The code uses SDL 1.2 event and key APIs; substituting SDL2 would be an API
+migration, not a dependency-only restoration.
+
+### Bundle C: 3D and collision foundation (8 units)
+
+New external requirements: desktop compatibility OpenGL and the vendored
+Bullet 2.78 collision/dynamics headers and libraries.
+
+- `MAORenderable3D.cpp`, `MAORenderable3DLine.cpp`,
+  `MAORenderable3DModel.cpp`, and `MAORenderable3DPath.cpp`.
+- `MLBActuatorAnim.cpp`, `MLBActuatorChangePose.cpp`,
+  `MLBActuatorPathAddPoint.cpp`, and `MLBActuatorPathRemovePoints.cpp`.
+
+The 3D base exposes Bullet collision types directly, so OpenGL-only and
+Bullet-only compilation phases cannot be separated without changing public
+headers.
+
+### Bundle D: 2D image rendering (3 units)
+
+New external requirement: SDL_image. SDL and OpenGL come from bundles B and C.
+
+- `MAORenderable2D.cpp` and `MAORenderable2DImage.cpp`.
+- `MLBActuatorVisibility.cpp`, which is unblocked only after both 2D and 3D
+  renderable bases exist.
+
+### Bundle E: native model parsers (3 units)
+
+New external requirement: none; SDL_image, OpenGL, resources, and the 3D model
+class are already active.
+
+- `Parser.cpp`, `ParserOrej.cpp`, and `ParserObj.cpp`.
+
+### Bundle F: text rendering (1 unit)
+
+New external requirement: SDL_ttf.
+
+- `MAORenderable2DText.cpp`.
+
+### Bundle G: 3DS model parser (1 unit)
+
+New external requirement: lib3ds.
+
+- `Parser3ds.cpp`.
+
+### Bundle H: AR tracking (2 units)
+
+New external requirements: the vendored ARToolKit 2.72.1 libraries plus their
+desktop GLU/GLUT support. OpenGL and the mark classes are already active.
+
+- `TrackingMethodARTK.cpp`.
+- `TrackingMethodFactory.cpp`.
+
+### Bundle I: MAO factory closure (1 unit)
+
+New external requirement: none. All concrete MAOs, model parsers, and tracking
+implementations are active by this point.
+
+- `MAOFactory.cpp`.
+
+### Bundle J: physics closure (4 units)
+
+New external requirement: none; Bullet, OpenGL, and GLUT were introduced by
+bundles C and H.
+
+- `GLDebugDrawer.cpp`, `PhysicObject.cpp`, `PhysicDynamicObject.cpp`, and
+  `PhysicsController.cpp`.
+
+The physics controller depends on `MAOFactory`, so these units cannot move into
+the earlier Bullet bundle without breaking the internal dependency order.
+
+### Bundle K: audio and world (2 units)
+
+New external requirement: SDL_mixer. SDL_ttf, OpenGL/GLU/GLUT, physics, and the
+factories are already active.
+
+- `MLBActuatorSound.cpp`.
+- `World.cpp`.
+
+### Bundle L: engine and Python closure (8 units)
+
+New external requirement: none.
+
+- `MLBSensorCollision.cpp`, `MLBSensorNear.cpp`, and
+  `MLBActuatorAddDynamicObject.cpp`.
+- `MLBControllerScript.cpp` and `MLBFactory.cpp`.
+- `MGEModule.cpp`, `MPYWrapper.cpp`, and `GameLogicController.cpp`.
+
+This is an intentionally ordered closure: the concrete physics/factory bricks
+precede the script controller, the complete MLB set precedes `MLBFactory`, and
+both factories precede the full Python wrapper and game-logic controller.
+
+### Bundle M: generated MSL frontend (3 units)
+
+New external requirement: a cross-toolchain-accessible `FlexLexer.h` runtime
+header. The already-installed `flex++` and `bison++` generators are needed only
+when regenerating the committed outputs.
+
+- `MSLProperties.cpp`, `MSLParser.cpp`, and `MSLScanner.cpp`.
+
+Their semantic actions require `World`, both factories, physics, MAO
+properties, and the complete Bullet/OpenCV stack, so compiling generated files
+earlier would not be a real dependency reduction.
+
+### Bundle N: original executables (2 units)
+
+New external requirement: none.
+
+- `minerva.cpp`.
+- `player.cpp`.
+
+These are final executable targets, not members of `minerva_kernel`; they enter
+only after every runtime and authoring subsystem is active.
+
+Some bundles are necessarily clusters because original headers expose concrete
+types or form factory/controller cycles. Splitting those clusters would require
+architectural test seams or public-header refactors, which are outside the
+compilation-first restoration methodology.
 
 ## Visual Studio Code
 

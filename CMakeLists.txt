@@ -57,9 +57,29 @@ add_library(minerva_kernel STATIC
     source/Kernel/VideoSource.cpp
     source/MAO/MAO.cpp
     source/MAO/MAOMark.cpp
+    source/MAO/MAOMarksGroup.cpp
     source/MAO/MAOPositionator3D.cpp
     source/MAO/MAOProperty.cpp
     source/MAO/MAOValue.cpp
+    source/MLB/MLB.cpp
+    source/MLB/Actuator/MLBActuator.cpp
+    source/MLB/Actuator/MLBActuatorAng.cpp
+    source/MLB/Actuator/MLBActuatorDistance.cpp
+    source/MLB/Actuator/MLBActuatorProperty.cpp
+    source/MLB/Actuator/MLBActuatorQuitApp.cpp
+    source/MLB/Actuator/MLBActuatorRandom.cpp
+    source/MLB/Actuator/MLBActuatorRelativePose.cpp
+    source/MLB/Controller/MLBController.cpp
+    source/MLB/Controller/MLBControllerAND.cpp
+    source/MLB/Controller/MLBControllerNAND.cpp
+    source/MLB/Controller/MLBControllerNOR.cpp
+    source/MLB/Controller/MLBControllerOR.cpp
+    source/MLB/Sensor/MLBSensor.cpp
+    source/MLB/Sensor/MLBSensorActuator.cpp
+    source/MLB/Sensor/MLBSensorAlways.cpp
+    source/MLB/Sensor/MLBSensorDelay.cpp
+    source/MLB/Sensor/MLBSensorProperty.cpp
+    source/MLB/Sensor/MLBSensorRandom.cpp
     source/MPY/WrapperTypes.cpp
 )
 
@@ -135,9 +155,14 @@ if(BUILD_TESTING)
         tests/Kernel/VideoSourceTests.cpp
         tests/MAO/MAOTests.cpp
         tests/MAO/MAOMarkTests.cpp
+        tests/MAO/MAOMarksGroupTests.cpp
         tests/MAO/MAOPositionator3DTests.cpp
         tests/MAO/MAOPropertyTests.cpp
         tests/MAO/MAOValueTests.cpp
+        tests/MLB/MLBTests.cpp
+        tests/MLB/Actuator/MLBActuatorTests.cpp
+        tests/MLB/Controller/MLBControllerTests.cpp
+        tests/MLB/Sensor/MLBSensorTests.cpp
         tests/MPY/WrapperTypesTests.cpp
     )
     target_link_libraries(minerva_kernel_tests PRIVATE
