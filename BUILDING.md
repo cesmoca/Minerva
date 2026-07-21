@@ -2,12 +2,12 @@
 
 Minerva is being restored in stages. The current CMake build compiles the
 completed standard-library baseline and resource I/O phase plus the
-value/property, camera, and Python binding foundations:
+value/property, camera, Python binding, and initial core MAO foundations:
 
 - `minerva_kernel`, containing the logger, application end controller, path and
   abstract tracking state, MSL include preprocessor, resource classes,
   `MAOValue`, `MAOProperty`, `VideoSource`, `VideoFactory`, and
-  `WrapperTypes`.
+  `WrapperTypes` and `MAO`.
 - `minerva_smoke`, a small executable that validates the compiled kernel.
 
 The generated MSL parser and scanner are committed to the repository, but they
@@ -259,7 +259,7 @@ toolchains before that phase enters `minerva_kernel`.
 | 2 | Current resource I/O: `Resource`, `ResourceFile`, `ResourceZip`, and `ResourcesManager` | `Logger` and `Singleton` from phase 0 | Boost.Filesystem and libzip |
 | 3 | Current value/property and camera foundation: `MAOValue`, `MAOProperty`, `VideoSource`, and `VideoFactory` | `Logger`, `Singleton` | OpenCV Core and Video I/O |
 | 4 | Current Python binding foundation: `WrapperTypes` | Standard-library baseline | Embedded Python and matching Boost.Python |
-| 5 | Core MAO objects: `MAO`, `MAOPositionator3D`, `MAOMark`, and `MAOMarksGroup` | Resources, value/property types, Python binding foundation | SDL headers plus the OpenCV and Boost.Python dependencies already introduced |
+| 5 | Core MAO objects: `MAO` is active; `MAOPositionator3D`, `MAOMark`, and `MAOMarksGroup` remain | Resources, value/property types, Python binding foundation | No new dependency beyond the active OpenCV and Boost.Python foundations |
 | 6 | Rendering objects: 2D base/image/text and 3D base/line/path/model classes | Core MAO, `PathPoint`, and `VideoFactory` | SDL, SDL_image, SDL_ttf, desktop compatibility OpenGL/GLU/GLUT, and Bullet collision headers for the 3D base |
 | 7 | Model loading: parser base, OreJ, OBJ, and 3DS loaders | Resources and `MAORenderable3DModel` | SDL_image/OpenGL already introduced, plus lib3ds for the 3DS loader |
 | 8 | AR tracking: `TrackingMethodARTK` and `TrackingMethodFactory` | Abstract tracking, resources, video, marks, and marker groups | Vendored ARToolKit 2.72.1 and its OpenGL-facing support |
@@ -274,8 +274,8 @@ toolchains before that phase enters `minerva_kernel`.
 | 17 | Original `minerva` authoring executable | World, resources, MSL preprocessor/parser, Python wrapper, and packaging | Boost.Filesystem and libzip already introduced |
 | 18 | Original `player` runtime executable | All runtime controllers, world, tracking, video, physics, MSL, and Python | Complete dependency set from earlier phases |
 
-Phases 2 through 4 are complete. The core MAO objects in phase 5 are the next
-dependency investigation.
+Phases 2 through 4 are complete, and `MAO` is active in phase 5.
+`MAOPositionator3D` is the next dependency-ordered phase-5 unit.
 
 Some later phases are necessarily clusters. In particular, the original
 factory, physics, world, logic-brick, and parser headers form cycles or include

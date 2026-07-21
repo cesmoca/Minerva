@@ -23,10 +23,8 @@
 
 #include <string>
 #include <vector>
-#include <cv.h>
-#include <SDL.h>
-#include <python.hpp>
-#include <filesystem.hpp>
+#include <opencv2/core.hpp>
+#include <boost/python.hpp>
 
 #include <MPY/WrapperTypes.h>
 #include <Kernel/Logger.h>
