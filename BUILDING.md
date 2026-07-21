@@ -2,12 +2,13 @@
 
 Minerva is being restored in stages. The current CMake build compiles the
 completed standard-library baseline and resource I/O phase plus the
-value/property, camera, Python binding, and initial core MAO foundations:
+value/property, camera, Python binding, core MAO/logic foundations, and SDL
+keyboard input:
 
 - `minerva_kernel`, containing the logger, application end controller, path and
   abstract tracking state, MSL include preprocessor, resource classes,
-  `MAOValue`, `MAOProperty`, `VideoSource`, `VideoFactory`, and
-  `WrapperTypes`, `MAO`, `MAOPositionator3D`, and `MAOMark`.
+  `MAOValue`, `MAOProperty`, `VideoSource`, `VideoFactory`, `WrapperTypes`, the
+  active MAO/MLB classes, `InputEventController`, and `MLBSensorKeyboard`.
 - `minerva_smoke`, a small executable that validates the compiled kernel.
 
 The generated MSL parser and scanner are committed to the repository, but they
@@ -23,15 +24,16 @@ parser implementation, and model-loading code are not part of the target yet.
 The resource phase requires Boost.Filesystem and libzip; libzip also requires
 zlib and may use bzip2. The value and property classes require OpenCV Core;
 `VideoSource` also requires OpenCV Video I/O. `WrapperTypes` requires
-embedded Python and matching Boost.Python. CMake uses installed packages and
-does not download these production dependencies.
+embedded Python and matching Boost.Python. Keyboard input requires SDL 1.2.
+CMake uses installed packages and does not download these production
+dependencies.
 
 For Visual Studio, the presets use a standalone vcpkg installation at
 `C:\vcpkg` and the `x64-windows-static-md` triplet. Install the active packages
 with:
 
 ```powershell
-C:\vcpkg\vcpkg.exe install boost-filesystem boost-python libzip gtest opencv4[core] --triplet x64-windows-static-md
+C:\vcpkg\vcpkg.exe install boost-filesystem boost-python libzip gtest opencv4[core] sdl1 --triplet x64-windows-static-md
 ```
 
 The Visual Studio preset supplies vcpkg's CMake toolchain file and triplet so
@@ -40,14 +42,16 @@ Debug and Release dependencies use the matching MSVC runtime libraries.
 For MSYS2 UCRT64, install the matching packages with:
 
 ```powershell
-C:\msys64\usr\bin\pacman.exe --noconfirm -S --needed mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-gtest mingw-w64-ucrt-x86_64-opencv
+C:\msys64\usr\bin\pacman.exe --noconfirm -S --needed mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-gtest mingw-w64-ucrt-x86_64-opencv mingw-w64-ucrt-x86_64-SDL
 ```
 
 The MSYS2 preset restricts package discovery to `C:\msys64\ucrt64`, preventing
 MSVC and MinGW packages from being mixed. GoogleTest retains its existing
 find-first, pinned FetchContent fallback, but Boost.Filesystem, Boost.Python,
 embedded Python, libzip, and OpenCV Core and Video I/O must be installed before
-configuration.
+configuration. SDL 1.2 is intentionally used for the original event/key API;
+SDL2 and SDL3 are not source-compatible substitutes for this restoration
+phase.
 
 ## Regenerating the MSL parser and scanner
 
@@ -248,8 +252,7 @@ all earlier phases compile and test with both the Visual Studio and MSYS2
 presets. The goal is compilation compatibility, not redesign or new behavior.
 No phase requires sample scenes, models, scripts, or other application assets.
 
-Commits through `d2a3d90 Compile and test MAOMark` form the committed baseline.
-Bundle A is active and verified in the current working tree; Bundle B is next.
+Bundles A and B are active and verified. Bundle C is next.
 The remaining roadmap is grouped by external dependency transitions instead of
 single translation units. Every bundle must compile and test as one change on
 both toolchains before introducing the next dependency set. A bundle marked
@@ -282,6 +285,8 @@ compiler-proven compatibility edits, but no package installation is needed.
 ### Bundle B: SDL input foundation (2 units)
 
 New external requirement: an SDL 1.2-compatible development/runtime package.
+
+This bundle is active and verified.
 
 - `InputEventController.cpp`.
 - `MLBSensorKeyboard.cpp`.

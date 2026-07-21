@@ -38,12 +38,14 @@ find_package(Boost 1.70 CONFIG REQUIRED COMPONENTS filesystem python)
 set(ZLIB_USE_STATIC_LIBS ON)
 find_package(libzip CONFIG REQUIRED)
 find_package(OpenCV 4 REQUIRED COMPONENTS core videoio)
+find_package(SDL REQUIRED)
 
 # This restoration target grows one dependency-ordered subsystem at a time.
-# The scene parser, Python, SDL/OpenGL, additional OpenCV modules, ARToolKit,
-# Bullet, audio, and model loaders remain excluded until their prerequisite
+# The scene parser, SDL rendering/audio, OpenGL, additional OpenCV modules,
+# ARToolKit, Bullet, and model loaders remain excluded until their prerequisite
 # phases are stable.
 add_library(minerva_kernel STATIC
+    source/Controllers/InputEventController.cpp
     source/Factories/VideoFactory.cpp
     source/Kernel/EndController.cpp
     source/Kernel/Logger.cpp
@@ -78,6 +80,7 @@ add_library(minerva_kernel STATIC
     source/MLB/Sensor/MLBSensorActuator.cpp
     source/MLB/Sensor/MLBSensorAlways.cpp
     source/MLB/Sensor/MLBSensorDelay.cpp
+    source/MLB/Sensor/MLBSensorKeyboard.cpp
     source/MLB/Sensor/MLBSensorProperty.cpp
     source/MLB/Sensor/MLBSensorRandom.cpp
     source/MPY/WrapperTypes.cpp
@@ -87,6 +90,7 @@ target_include_directories(minerva_kernel
     PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
         ${OpenCV_INCLUDE_DIRS}
+        ${SDL_INCLUDE_DIRS}
 )
 
 target_link_libraries(minerva_kernel
@@ -95,11 +99,14 @@ target_link_libraries(minerva_kernel
         Boost::python
         libzip::zip
         ${OpenCV_LIBS}
+        ${SDL_LIBRARIES}
 )
 
 if(WIN32)
     # The legacy code tests WIN32 rather than the compiler-provided _WIN32.
     target_compile_definitions(minerva_kernel PUBLIC WIN32)
+    # SDL 1.2's static Windows build leaves these platform libraries to users.
+    target_link_libraries(minerva_kernel PUBLIC winmm dxguid)
 endif()
 
 if(MSVC)
@@ -142,6 +149,7 @@ if(BUILD_TESTING)
     endif()
 
     add_executable(minerva_kernel_tests
+        tests/Controllers/InputEventControllerTests.cpp
         tests/Factories/VideoFactoryTests.cpp
         tests/Kernel/EndControllerTests.cpp
         tests/Kernel/LoggerTests.cpp
@@ -163,6 +171,7 @@ if(BUILD_TESTING)
         tests/MLB/Actuator/MLBActuatorTests.cpp
         tests/MLB/Controller/MLBControllerTests.cpp
         tests/MLB/Sensor/MLBSensorTests.cpp
+        tests/MLB/Sensor/MLBSensorKeyboardTests.cpp
         tests/MPY/WrapperTypesTests.cpp
     )
     target_link_libraries(minerva_kernel_tests PRIVATE
