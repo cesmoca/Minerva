@@ -40,6 +40,9 @@ find_package(libzip CONFIG REQUIRED)
 find_package(OpenCV 4 REQUIRED COMPONENTS core videoio)
 find_package(SDL REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(JPEG REQUIRED)
+find_package(PNG REQUIRED)
+find_package(SDL_image 1.2 REQUIRED)
 
 # Minerva's public 3D API is coupled to the vendored Bullet 2.78 headers.
 # Build only the two Bullet components required by the current bundle.
@@ -78,6 +81,8 @@ add_library(minerva_kernel STATIC
     source/MAO/MAOMarksGroup.cpp
     source/MAO/MAOPositionator3D.cpp
     source/MAO/MAOProperty.cpp
+    source/MAO/MAORenderable2D.cpp
+    source/MAO/MAORenderable2DImage.cpp
     source/MAO/MAORenderable3D.cpp
     source/MAO/MAORenderable3DLine.cpp
     source/MAO/MAORenderable3DModel.cpp
@@ -95,6 +100,7 @@ add_library(minerva_kernel STATIC
     source/MLB/Actuator/MLBActuatorQuitApp.cpp
     source/MLB/Actuator/MLBActuatorRandom.cpp
     source/MLB/Actuator/MLBActuatorRelativePose.cpp
+    source/MLB/Actuator/MLBActuatorVisibility.cpp
     source/MLB/Controller/MLBController.cpp
     source/MLB/Controller/MLBControllerAND.cpp
     source/MLB/Controller/MLBControllerNAND.cpp
@@ -115,6 +121,7 @@ target_include_directories(minerva_kernel
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
         ${OpenCV_INCLUDE_DIRS}
         ${SDL_INCLUDE_DIRS}
+        ${SDL_IMAGE_INCLUDE_DIRS}
 )
 
 target_include_directories(minerva_kernel SYSTEM PUBLIC
@@ -128,6 +135,9 @@ target_link_libraries(minerva_kernel
         libzip::zip
         ${OpenCV_LIBS}
         ${SDL_LIBRARIES}
+        ${SDL_IMAGE_LIBRARIES}
+        JPEG::JPEG
+        PNG::PNG
         OpenGL::GL
         BulletCollision
         LinearMath
@@ -199,11 +209,13 @@ if(BUILD_TESTING)
         tests/MAO/MAOMarksGroupTests.cpp
         tests/MAO/MAOPositionator3DTests.cpp
         tests/MAO/MAOPropertyTests.cpp
+        tests/MAO/MAORenderable2DTests.cpp
         tests/MAO/MAORenderable3DTests.cpp
         tests/MAO/MAOValueTests.cpp
         tests/MLB/MLBTests.cpp
         tests/MLB/Actuator/MLBActuatorTests.cpp
         tests/MLB/Actuator/MLBActuator3DTests.cpp
+        tests/MLB/Actuator/MLBActuatorVisibilityTests.cpp
         tests/MLB/Controller/MLBControllerTests.cpp
         tests/MLB/Sensor/MLBSensorTests.cpp
         tests/MLB/Sensor/MLBSensorKeyboardTests.cpp

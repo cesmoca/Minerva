@@ -2,8 +2,8 @@
 
 Minerva is being restored in stages. The current CMake build compiles the
 completed standard-library baseline and resource I/O phase plus the
-value/property, camera, Python binding, core MAO/logic foundations, and SDL
-keyboard input:
+value/property, camera, Python binding, core MAO/logic foundations, SDL input,
+3D collision/rendering foundations, and 2D image rendering:
 
 - `minerva_kernel`, containing the logger, application end controller, path and
   abstract tracking state, MSL include preprocessor, resource classes,
@@ -16,25 +16,33 @@ are not part of a CMake target yet. Their original semantic actions directly
 depend on the world, resource, MAO, MLB, and physics domains. Keeping the files
 out of the baseline target avoids accidentally activating those subsystems.
 
-The renderer, concrete tracking, physics, scripting, audio, generated MSL
-parser implementation, and model-loading code are not part of the target yet.
+Concrete tracking, physics controllers, scripting, audio, generated MSL parser
+implementation, model loading, and the remaining renderer classes are not part
+of the target yet.
 
 ## Active third-party dependencies
 
 The resource phase requires Boost.Filesystem and libzip; libzip also requires
 zlib and may use bzip2. The value and property classes require OpenCV Core;
 `VideoSource` also requires OpenCV Video I/O. `WrapperTypes` requires
-embedded Python and matching Boost.Python. Keyboard input requires SDL 1.2.
-CMake uses installed packages and does not download these production
-dependencies.
+embedded Python and matching Boost.Python. Input requires SDL 1.2. Rendering
+requires desktop compatibility OpenGL, the vendored Bullet 2.78 sources, and
+SDL_image 1.2 with JPEG and PNG codecs. CMake uses installed packages and does
+not download these production dependencies.
 
 For Visual Studio, the presets use a standalone vcpkg installation at
 `C:\vcpkg` and the `x64-windows-static-md` triplet. Install the active packages
 with:
 
 ```powershell
-C:\vcpkg\vcpkg.exe install boost-filesystem boost-python libzip gtest opencv4[core] sdl1 --triplet x64-windows-static-md
+C:\vcpkg\vcpkg.exe install boost-filesystem boost-python libzip gtest opencv4[core] sdl1 sdl1-image --triplet x64-windows-static-md --overlay-ports="$PWD\ports"
 ```
+
+The repository-local `sdl1-image` overlay port pins the official SDL_image
+1.2.12 source and builds it statically against the same SDL 1.2 triplet, with
+static JPEG and PNG support. This avoids mixing the static vcpkg SDL library
+with the incompatible SDL runtime expected by the upstream prebuilt
+`SDL_image.dll`.
 
 The Visual Studio preset supplies vcpkg's CMake toolchain file and triplet so
 Debug and Release dependencies use the matching MSVC runtime libraries.
@@ -42,7 +50,7 @@ Debug and Release dependencies use the matching MSVC runtime libraries.
 For MSYS2 UCRT64, install the matching packages with:
 
 ```powershell
-C:\msys64\usr\bin\pacman.exe --noconfirm -S --needed mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-gtest mingw-w64-ucrt-x86_64-opencv mingw-w64-ucrt-x86_64-SDL
+C:\msys64\usr\bin\pacman.exe --noconfirm -S --needed mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-gtest mingw-w64-ucrt-x86_64-opencv mingw-w64-ucrt-x86_64-SDL mingw-w64-ucrt-x86_64-SDL_image
 ```
 
 The MSYS2 preset restricts package discovery to `C:\msys64\ucrt64`, preventing
@@ -252,7 +260,7 @@ all earlier phases compile and test with both the Visual Studio and MSYS2
 presets. The goal is compilation compatibility, not redesign or new behavior.
 No phase requires sample scenes, models, scripts, or other application assets.
 
-Bundles A and B are active and verified. Bundle C is next.
+Bundles A through D are active and verified. Bundle E is next.
 The remaining roadmap is grouped by external dependency transitions instead of
 single translation units. Every bundle must compile and test as one change on
 both toolchains before introducing the next dependency set. A bundle marked
@@ -313,6 +321,10 @@ headers.
 ### Bundle D: 2D image rendering (3 units)
 
 New external requirement: SDL_image. SDL and OpenGL come from bundles B and C.
+
+This bundle is active and verified in the Visual Studio preset, root Visual
+Studio build, and MSYS2 preset. All three flows pass 96 tests, including a
+real SDL_image load and OpenGL texture generation test.
 
 - `MAORenderable2D.cpp` and `MAORenderable2DImage.cpp`.
 - `MLBActuatorVisibility.cpp`, which is unblocked only after both 2D and 3D

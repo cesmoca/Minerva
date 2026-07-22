@@ -1,0 +1,17 @@
+{
+  "name": "sdl1-image",
+  "version": "1.2.12",
+  "description": "SDL_image 1.2 image loading library for SDL 1.2",
+  "homepage": "https://github.com/libsdl-org/SDL_image",
+  "license": "Zlib",
+  "supports": "!uwp",
+  "dependencies": [
+    "libjpeg-turbo",
+    "libpng",
+    "sdl1",
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    }
+  ]
+}
