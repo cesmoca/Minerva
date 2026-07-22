@@ -43,6 +43,8 @@ find_package(OpenGL REQUIRED)
 find_package(JPEG REQUIRED)
 find_package(PNG REQUIRED)
 find_package(SDL_image 1.2 REQUIRED)
+find_package(Freetype REQUIRED)
+find_package(SDL_ttf 2.0 REQUIRED)
 
 # Minerva's public 3D API is coupled to the vendored Bullet 2.78 headers.
 # Build only the two Bullet components required by the current bundle.
@@ -86,6 +88,7 @@ add_library(minerva_kernel STATIC
     source/MAO/MAOProperty.cpp
     source/MAO/MAORenderable2D.cpp
     source/MAO/MAORenderable2DImage.cpp
+    source/MAO/MAORenderable2DText.cpp
     source/MAO/MAORenderable3D.cpp
     source/MAO/MAORenderable3DLine.cpp
     source/MAO/MAORenderable3DModel.cpp
@@ -125,6 +128,7 @@ target_include_directories(minerva_kernel
         ${OpenCV_INCLUDE_DIRS}
         ${SDL_INCLUDE_DIRS}
         ${SDL_IMAGE_INCLUDE_DIRS}
+        ${SDL_TTF_INCLUDE_DIRS}
 )
 
 target_include_directories(minerva_kernel SYSTEM PUBLIC
@@ -139,8 +143,10 @@ target_link_libraries(minerva_kernel
         ${OpenCV_LIBS}
         ${SDL_LIBRARIES}
         ${SDL_IMAGE_LIBRARIES}
+        ${SDL_TTF_LIBRARIES}
         JPEG::JPEG
         PNG::PNG
+        Freetype::Freetype
         OpenGL::GL
         BulletCollision
         LinearMath
@@ -214,6 +220,7 @@ if(BUILD_TESTING)
         tests/MAO/MAOPositionator3DTests.cpp
         tests/MAO/MAOPropertyTests.cpp
         tests/MAO/MAORenderable2DTests.cpp
+        tests/MAO/MAORenderable2DTextTests.cpp
         tests/MAO/MAORenderable3DTests.cpp
         tests/MAO/MAOValueTests.cpp
         tests/MLB/MLBTests.cpp

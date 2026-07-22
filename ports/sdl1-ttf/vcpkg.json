@@ -1,0 +1,16 @@
+{
+  "name": "sdl1-ttf",
+  "version": "2.0.11",
+  "description": "SDL_ttf 2.0.11 font rendering library for SDL 1.2",
+  "homepage": "https://github.com/libsdl-org/SDL_ttf",
+  "license": "Zlib",
+  "supports": "!uwp",
+  "dependencies": [
+    "freetype",
+    "sdl1",
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    }
+  ]
+}

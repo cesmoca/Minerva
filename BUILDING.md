@@ -4,7 +4,7 @@ Minerva is being restored in stages. The current CMake build compiles the
 completed standard-library baseline and resource I/O phase plus the
 value/property, camera, Python binding, core MAO/logic foundations, SDL input,
 3D collision/rendering foundations, 2D image rendering, and native OreJ/OBJ
-model parsing:
+model parsing, and 2D TrueType text rendering:
 
 - `minerva_kernel`, containing the logger, application end controller, path and
   abstract tracking state, MSL include preprocessor, resource classes,
@@ -27,23 +27,24 @@ The resource phase requires Boost.Filesystem and libzip; libzip also requires
 zlib and may use bzip2. The value and property classes require OpenCV Core;
 `VideoSource` also requires OpenCV Video I/O. `WrapperTypes` requires
 embedded Python and matching Boost.Python. Input requires SDL 1.2. Rendering
-requires desktop compatibility OpenGL, the vendored Bullet 2.78 sources, and
-SDL_image 1.2 with JPEG and PNG codecs. CMake uses installed packages and does
-not download these production dependencies.
+requires desktop compatibility OpenGL, the vendored Bullet 2.78 sources,
+SDL_image 1.2 with JPEG and PNG codecs, and SDL_ttf 2.0.11 with FreeType.
+CMake uses installed packages and does not download these production
+dependencies.
 
 For Visual Studio, the presets use a standalone vcpkg installation at
 `C:\vcpkg` and the `x64-windows-static-md` triplet. Install the active packages
 with:
 
 ```powershell
-C:\vcpkg\vcpkg.exe install boost-filesystem boost-python libzip gtest opencv4[core] sdl1 sdl1-image --triplet x64-windows-static-md --overlay-ports="$PWD\ports"
+C:\vcpkg\vcpkg.exe install boost-filesystem boost-python libzip gtest opencv4[core] sdl1 sdl1-image sdl1-ttf --triplet x64-windows-static-md --overlay-ports="$PWD\ports"
 ```
 
-The repository-local `sdl1-image` overlay port pins the official SDL_image
-1.2.12 source and builds it statically against the same SDL 1.2 triplet, with
-static JPEG and PNG support. This avoids mixing the static vcpkg SDL library
-with the incompatible SDL runtime expected by the upstream prebuilt
-`SDL_image.dll`.
+The repository-local `sdl1-image` and `sdl1-ttf` overlay ports pin the official
+SDL_image 1.2.12 and SDL_ttf 2.0.11 sources and build them statically against
+the same SDL 1.2 triplet. SDL_image uses static JPEG and PNG support; SDL_ttf
+uses the triplet's FreeType package. This avoids mixing the static vcpkg SDL
+library with incompatible DLL runtime families.
 
 The Visual Studio preset supplies vcpkg's CMake toolchain file and triplet so
 Debug and Release dependencies use the matching MSVC runtime libraries.
@@ -51,7 +52,7 @@ Debug and Release dependencies use the matching MSVC runtime libraries.
 For MSYS2 UCRT64, install the matching packages with:
 
 ```powershell
-C:\msys64\usr\bin\pacman.exe --noconfirm -S --needed mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-gtest mingw-w64-ucrt-x86_64-opencv mingw-w64-ucrt-x86_64-SDL mingw-w64-ucrt-x86_64-SDL_image
+C:\msys64\usr\bin\pacman.exe --noconfirm -S --needed mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-gtest mingw-w64-ucrt-x86_64-opencv mingw-w64-ucrt-x86_64-SDL mingw-w64-ucrt-x86_64-SDL_image mingw-w64-ucrt-x86_64-SDL_ttf
 ```
 
 The MSYS2 preset restricts package discovery to `C:\msys64\ucrt64`, preventing
@@ -61,6 +62,10 @@ embedded Python, libzip, and OpenCV Core and Video I/O must be installed before
 configuration. SDL 1.2 is intentionally used for the original event/key API;
 SDL2 and SDL3 are not source-compatible substitutes for this restoration
 phase.
+
+The text-rendering tests use a real installed TrueType font instead of a
+repository asset. They search common Windows Arial/Caladea and Linux DejaVu
+locations and report a clear test failure if none is available.
 
 ## Regenerating the MSL parser and scanner
 
@@ -261,7 +266,7 @@ all earlier phases compile and test with both the Visual Studio and MSYS2
 presets. The goal is compilation compatibility, not redesign or new behavior.
 No phase requires sample scenes, models, scripts, or other application assets.
 
-Bundles A through E are active and verified. Bundle F is next.
+Bundles A through F are active and verified. Bundle G is next.
 The remaining roadmap is grouped by external dependency transitions instead of
 single translation units. Every bundle must compile and test as one change on
 both toolchains before introducing the next dependency set. A bundle marked
@@ -346,6 +351,12 @@ scaled geometry through generated Bullet collision bounds.
 ### Bundle F: text rendering (1 unit)
 
 New external requirement: SDL_ttf.
+
+This bundle is active and verified in the Visual Studio preset, root Visual
+Studio build, and MSYS2 preset. All three flows pass 100 tests. The tests load
+a real TrueType font through the resource manager, render UTF-8 text under a
+real SDL/OpenGL context, regenerate its texture, and verify the legacy text
+properties.
 
 - `MAORenderable2DText.cpp`.
 
@@ -554,6 +565,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Boost.Filesystem, Boost.Python, embedded Python, libzip, and the OpenCV Core and
-Video I/O components must be discoverable by CMake. For custom build trees,
-pass the appropriate vcpkg toolchain or package prefix described above.
+Boost.Filesystem, Boost.Python, embedded Python, libzip, the OpenCV Core and
+Video I/O components, SDL 1.2, SDL_image 1.2, SDL_ttf 2.0.11, FreeType, and
+desktop OpenGL must be discoverable by CMake. For custom build trees, pass the
+appropriate vcpkg toolchain or package prefix described above.
