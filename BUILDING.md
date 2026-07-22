@@ -299,6 +299,8 @@ migration, not a dependency-only restoration.
 New external requirements: desktop compatibility OpenGL and the vendored
 Bullet 2.78 collision/dynamics headers and libraries.
 
+This bundle is active and verified.
+
 - `MAORenderable3D.cpp`, `MAORenderable3DLine.cpp`,
   `MAORenderable3DModel.cpp`, and `MAORenderable3DPath.cpp`.
 - `MLBActuatorAnim.cpp`, `MLBActuatorChangePose.cpp`,

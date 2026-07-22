@@ -39,11 +39,27 @@ set(ZLIB_USE_STATIC_LIBS ON)
 find_package(libzip CONFIG REQUIRED)
 find_package(OpenCV 4 REQUIRED COMPONENTS core videoio)
 find_package(SDL REQUIRED)
+find_package(OpenGL REQUIRED)
+
+# Minerva's public 3D API is coupled to the vendored Bullet 2.78 headers.
+# Build only the two Bullet components required by the current bundle.
+set(BULLET_PHYSICS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/bullet-2.78")
+set(BULLET_VERSION 2.78)
+set(INSTALL_LIBS OFF)
+add_subdirectory(lib/bullet-2.78/src/LinearMath EXCLUDE_FROM_ALL)
+add_subdirectory(lib/bullet-2.78/src/BulletCollision EXCLUDE_FROM_ALL)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # Bullet 2.78 uses pointer-to-long casts that modern 64-bit GCC rejects.
+    # Keep the compatibility relaxation at target level; vendor sources stay
+    # unchanged.
+    target_compile_options(LinearMath PRIVATE -fpermissive)
+    target_compile_options(BulletCollision PRIVATE -fpermissive)
+endif()
 
 # This restoration target grows one dependency-ordered subsystem at a time.
-# The scene parser, SDL rendering/audio, OpenGL, additional OpenCV modules,
-# ARToolKit, Bullet, and model loaders remain excluded until their prerequisite
-# phases are stable.
+# The scene parser, SDL rendering/audio, additional OpenCV modules, ARToolKit,
+# and model loaders remain excluded until their prerequisite phases are stable.
 add_library(minerva_kernel STATIC
     source/Controllers/InputEventController.cpp
     source/Factories/VideoFactory.cpp
@@ -62,11 +78,19 @@ add_library(minerva_kernel STATIC
     source/MAO/MAOMarksGroup.cpp
     source/MAO/MAOPositionator3D.cpp
     source/MAO/MAOProperty.cpp
+    source/MAO/MAORenderable3D.cpp
+    source/MAO/MAORenderable3DLine.cpp
+    source/MAO/MAORenderable3DModel.cpp
+    source/MAO/MAORenderable3DPath.cpp
     source/MAO/MAOValue.cpp
     source/MLB/MLB.cpp
     source/MLB/Actuator/MLBActuator.cpp
     source/MLB/Actuator/MLBActuatorAng.cpp
+    source/MLB/Actuator/MLBActuatorAnim.cpp
+    source/MLB/Actuator/MLBActuatorChangePose.cpp
     source/MLB/Actuator/MLBActuatorDistance.cpp
+    source/MLB/Actuator/MLBActuatorPathAddPoint.cpp
+    source/MLB/Actuator/MLBActuatorPathRemovePoints.cpp
     source/MLB/Actuator/MLBActuatorProperty.cpp
     source/MLB/Actuator/MLBActuatorQuitApp.cpp
     source/MLB/Actuator/MLBActuatorRandom.cpp
@@ -93,6 +117,10 @@ target_include_directories(minerva_kernel
         ${SDL_INCLUDE_DIRS}
 )
 
+target_include_directories(minerva_kernel SYSTEM PUBLIC
+    "${BULLET_PHYSICS_SOURCE_DIR}/src"
+)
+
 target_link_libraries(minerva_kernel
     PUBLIC
         Boost::filesystem
@@ -100,6 +128,9 @@ target_link_libraries(minerva_kernel
         libzip::zip
         ${OpenCV_LIBS}
         ${SDL_LIBRARIES}
+        OpenGL::GL
+        BulletCollision
+        LinearMath
 )
 
 if(WIN32)
@@ -113,6 +144,8 @@ if(MSVC)
     target_compile_options(minerva_kernel PRIVATE /W4 /permissive- /EHsc)
 else()
     target_compile_options(minerva_kernel PRIVATE -Wall -Wextra -Wpedantic)
+    # Public Bullet 2.78 headers contain the same 64-bit casts as its sources.
+    target_compile_options(minerva_kernel PUBLIC -fpermissive)
 endif()
 
 add_executable(minerva_smoke
@@ -166,9 +199,11 @@ if(BUILD_TESTING)
         tests/MAO/MAOMarksGroupTests.cpp
         tests/MAO/MAOPositionator3DTests.cpp
         tests/MAO/MAOPropertyTests.cpp
+        tests/MAO/MAORenderable3DTests.cpp
         tests/MAO/MAOValueTests.cpp
         tests/MLB/MLBTests.cpp
         tests/MLB/Actuator/MLBActuatorTests.cpp
+        tests/MLB/Actuator/MLBActuator3DTests.cpp
         tests/MLB/Controller/MLBControllerTests.cpp
         tests/MLB/Sensor/MLBSensorTests.cpp
         tests/MLB/Sensor/MLBSensorKeyboardTests.cpp
