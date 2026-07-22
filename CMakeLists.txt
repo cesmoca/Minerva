@@ -69,6 +69,9 @@ add_library(minerva_kernel STATIC
     source/Kernel/EndController.cpp
     source/Kernel/Logger.cpp
     source/Kernel/PathPoint.cpp
+    source/Kernel/Parsers/Parser.cpp
+    source/Kernel/Parsers/ParserObj.cpp
+    source/Kernel/Parsers/ParserOrej.cpp
     source/Kernel/Resources/Resource.cpp
     source/Kernel/Resources/ResourceFile.cpp
     source/Kernel/Resources/ResourceZip.cpp
@@ -197,6 +200,7 @@ if(BUILD_TESTING)
         tests/Kernel/EndControllerTests.cpp
         tests/Kernel/LoggerTests.cpp
         tests/Kernel/PathPointTests.cpp
+        tests/Kernel/Parsers/ParserTests.cpp
         tests/Kernel/Parsers/MSLPreprocessorTests.cpp
         tests/Kernel/Resources/ResourceTests.cpp
         tests/Kernel/Resources/ResourceFileTests.cpp

@@ -3,7 +3,8 @@
 Minerva is being restored in stages. The current CMake build compiles the
 completed standard-library baseline and resource I/O phase plus the
 value/property, camera, Python binding, core MAO/logic foundations, SDL input,
-3D collision/rendering foundations, and 2D image rendering:
+3D collision/rendering foundations, 2D image rendering, and native OreJ/OBJ
+model parsing:
 
 - `minerva_kernel`, containing the logger, application end controller, path and
   abstract tracking state, MSL include preprocessor, resource classes,
@@ -17,8 +18,8 @@ depend on the world, resource, MAO, MLB, and physics domains. Keeping the files
 out of the baseline target avoids accidentally activating those subsystems.
 
 Concrete tracking, physics controllers, scripting, audio, generated MSL parser
-implementation, model loading, and the remaining renderer classes are not part
-of the target yet.
+implementation, the remaining model loaders, and the remaining renderer
+classes are not part of the target yet.
 
 ## Active third-party dependencies
 
@@ -260,14 +261,14 @@ all earlier phases compile and test with both the Visual Studio and MSYS2
 presets. The goal is compilation compatibility, not redesign or new behavior.
 No phase requires sample scenes, models, scripts, or other application assets.
 
-Bundles A through D are active and verified. Bundle E is next.
+Bundles A through E are active and verified. Bundle F is next.
 The remaining roadmap is grouped by external dependency transitions instead of
 single translation units. Every bundle must compile and test as one change on
 both toolchains before introducing the next dependency set. A bundle marked
 "none" uses only libraries activated by earlier bundles.
 
-The fourteen bundles below contain all 60 remaining original translation units
-exactly once.
+The fourteen bundles below partition the 60 original restoration translation
+units exactly once.
 
 ### Bundle A: current-stack closure (20 units)
 
@@ -334,6 +335,11 @@ real SDL_image load and OpenGL texture generation test.
 
 New external requirement: none; SDL_image, OpenGL, resources, and the 3D model
 class are already active.
+
+This bundle is active and verified in the Visual Studio preset, root Visual
+Studio build, and MSYS2 preset. All three flows pass 98 tests. The parser tests
+load real OBJ and textured OreJ files under a real OpenGL context and verify
+scaled geometry through generated Bullet collision bounds.
 
 - `Parser.cpp`, `ParserOrej.cpp`, and `ParserObj.cpp`.
 
