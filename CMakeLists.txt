@@ -160,12 +160,13 @@ else()
 endif()
 
 # Minerva's public 3D API is coupled to the vendored Bullet 2.78 headers.
-# Build only the two Bullet components required by the current bundle.
+# Build only the Bullet components required by the active bundles.
 set(BULLET_PHYSICS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/bullet-2.78")
 set(BULLET_VERSION 2.78)
 set(INSTALL_LIBS OFF)
 add_subdirectory(lib/bullet-2.78/src/LinearMath EXCLUDE_FROM_ALL)
 add_subdirectory(lib/bullet-2.78/src/BulletCollision EXCLUDE_FROM_ALL)
+add_subdirectory(lib/bullet-2.78/src/BulletDynamics EXCLUDE_FROM_ALL)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # Bullet 2.78 uses pointer-to-long casts that modern 64-bit GCC rejects.
@@ -173,6 +174,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # unchanged.
     target_compile_options(LinearMath PRIVATE -fpermissive)
     target_compile_options(BulletCollision PRIVATE -fpermissive)
+    target_compile_options(BulletDynamics PRIVATE -fpermissive)
 endif()
 
 # This restoration target grows one dependency-ordered subsystem at a time.
@@ -180,12 +182,16 @@ endif()
 # excluded until their prerequisite phases are stable.
 add_library(minerva_kernel STATIC
     source/Controllers/InputEventController.cpp
+    source/Controllers/PhysicsController.cpp
     source/Factories/MAOFactory.cpp
     source/Factories/TrackingMethodFactory.cpp
     source/Factories/VideoFactory.cpp
     source/Kernel/EndController.cpp
+    source/Kernel/GLDebugDrawer.cpp
     source/Kernel/Logger.cpp
     source/Kernel/PathPoint.cpp
+    source/Kernel/PhysicDynamicObject.cpp
+    source/Kernel/PhysicObject.cpp
     source/Kernel/Parsers/Parser.cpp
     source/Kernel/Parsers/Parser3ds.cpp
     source/Kernel/Parsers/ParserObj.cpp
@@ -268,6 +274,7 @@ target_link_libraries(minerva_kernel
         OpenGL::GLU
         artoolkit_gsub
         lib3ds
+        BulletDynamics
         BulletCollision
         LinearMath
 )
@@ -322,11 +329,14 @@ if(BUILD_TESTING)
 
     add_executable(minerva_kernel_tests
         tests/Controllers/InputEventControllerTests.cpp
+        tests/Controllers/PhysicsControllerTests.cpp
         tests/Factories/MAOFactoryTests.cpp
         tests/Factories/VideoFactoryTests.cpp
         tests/Kernel/EndControllerTests.cpp
+        tests/Kernel/GLDebugDrawerTests.cpp
         tests/Kernel/LoggerTests.cpp
         tests/Kernel/PathPointTests.cpp
+        tests/Kernel/PhysicObjectTests.cpp
         tests/Kernel/Parsers/ParserTests.cpp
         tests/Kernel/Parsers/Parser3dsTests.cpp
         tests/Kernel/Parsers/MSLPreprocessorTests.cpp

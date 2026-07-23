@@ -5,13 +5,15 @@ completed standard-library baseline and resource I/O phase plus the
 value/property, camera, Python binding, core MAO/logic foundations, SDL input,
 3D collision/rendering foundations, 2D image rendering, and native OreJ/OBJ
 and 3DS model parsing, 2D TrueType text rendering, ARToolKit tracking, and the
-MAO factory:
+MAO factory and Bullet physics:
 
 - `minerva_kernel`, containing the logger, application end controller, path and
   abstract tracking state, MSL include preprocessor, resource classes,
   `MAOValue`, `MAOProperty`, `VideoSource`, `VideoFactory`, `WrapperTypes`, the
   active MAO/MLB classes, `InputEventController`, `MLBSensorKeyboard`,
-  `TrackingMethodARTK`, `TrackingMethodFactory`, and `MAOFactory`.
+  `TrackingMethodARTK`, `TrackingMethodFactory`, `MAOFactory`,
+  `GLDebugDrawer`, `PhysicObject`, `PhysicDynamicObject`, and
+  `PhysicsController`.
 - `minerva_smoke`, a small executable that validates the compiled kernel.
 
 The generated MSL parser and scanner are committed to the repository, but they
@@ -19,8 +21,8 @@ are not part of a CMake target yet. Their original semantic actions directly
 depend on the world, resource, MAO, MLB, and physics domains. Keeping the files
 out of the baseline target avoids accidentally activating those subsystems.
 
-Physics controllers, scripting, audio, generated MSL parser implementation,
-and the remaining renderer classes are not part of the target yet.
+Scripting, audio, generated MSL parser implementation, the world, and the
+remaining renderer classes are not part of the target yet.
 
 ## Active third-party dependencies
 
@@ -287,7 +289,7 @@ all earlier phases compile and test with both the Visual Studio and MSYS2
 presets. The goal is compilation compatibility, not redesign or new behavior.
 No phase requires sample scenes, models, scripts, or other application assets.
 
-Bundles A through I are active and verified. Bundle J is next.
+Bundles A through J are active and verified. Bundle K is next.
 The remaining roadmap is grouped by external dependency transitions instead of
 single translation units. Every bundle must compile and test as one change on
 both toolchains before introducing the next dependency set. A bundle marked
@@ -426,6 +428,14 @@ and transactional-creation risks are recorded in FW-040.
 
 New external requirement: none; Bullet, OpenGL, and GLUT were introduced by
 bundles C and H.
+
+This bundle is active and verified in the Visual Studio preset, root Visual
+Studio build, and MSYS2 preset. All three flows pass 116 tests. The tests cover
+debug-drawer state and safe no-op callbacks, static and dynamic rigid-body
+construction, offset/impulse state, controller and ground initialization,
+static/dynamic body registration and removal, and overlapping/separated box
+collision. The broader controller, Bullet, collision, OpenGL, and ownership
+risks are recorded in FW-041.
 
 - `GLDebugDrawer.cpp`, `PhysicObject.cpp`, `PhysicDynamicObject.cpp`, and
   `PhysicsController.cpp`.
