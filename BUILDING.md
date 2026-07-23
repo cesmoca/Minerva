@@ -4,7 +4,7 @@ Minerva is being restored in stages. The current CMake build compiles the
 completed standard-library baseline and resource I/O phase plus the
 value/property, camera, Python binding, core MAO/logic foundations, SDL input,
 3D collision/rendering foundations, 2D image rendering, and native OreJ/OBJ
-model parsing, and 2D TrueType text rendering:
+and 3DS model parsing, and 2D TrueType text rendering:
 
 - `minerva_kernel`, containing the logger, application end controller, path and
   abstract tracking state, MSL include preprocessor, resource classes,
@@ -18,8 +18,8 @@ depend on the world, resource, MAO, MLB, and physics domains. Keeping the files
 out of the baseline target avoids accidentally activating those subsystems.
 
 Concrete tracking, physics controllers, scripting, audio, generated MSL parser
-implementation, the remaining model loaders, and the remaining renderer
-classes are not part of the target yet.
+implementation, the MAO factory, and the remaining renderer classes are not
+part of the target yet.
 
 ## Active third-party dependencies
 
@@ -29,8 +29,17 @@ zlib and may use bzip2. The value and property classes require OpenCV Core;
 embedded Python and matching Boost.Python. Input requires SDL 1.2. Rendering
 requires desktop compatibility OpenGL, the vendored Bullet 2.78 sources,
 SDL_image 1.2 with JPEG and PNG codecs, and SDL_ttf 2.0.11 with FreeType.
-CMake uses installed packages and does not download these production
-dependencies.
+The 3DS parser requires lib3ds 1.3.0. CMake uses installed packages for the
+other production dependencies.
+
+lib3ds 1.3.0 has no current vcpkg or MSYS2 UCRT64 package matching both build
+flows. CMake therefore downloads the pristine upstream archive mirrored by
+Debian, verifies SHA-512
+`a315bd0f75cf87d8e285b5a405fe9f033900e23b363cdcf079142dc59edc94e63666e8ab2c0097d939689cd8da0fdcacacaa15f50d0ac3e8a9f5c79b854ab23b`,
+and builds its C sources as the same static target under MSVC and MSYS2.
+lib3ds source files identify their license as LGPL 2.1 or later. A first
+configure therefore needs network access unless CMake's FetchContent cache is
+already populated.
 
 For Visual Studio, the presets use a standalone vcpkg installation at
 `C:\vcpkg` and the `x64-windows-static-md` triplet. Install the active packages
@@ -266,7 +275,7 @@ all earlier phases compile and test with both the Visual Studio and MSYS2
 presets. The goal is compilation compatibility, not redesign or new behavior.
 No phase requires sample scenes, models, scripts, or other application assets.
 
-Bundles A through F are active and verified. Bundle G is next.
+Bundles A through G are active and verified. Bundle H is next.
 The remaining roadmap is grouped by external dependency transitions instead of
 single translation units. Every bundle must compile and test as one change on
 both toolchains before introducing the next dependency set. A bundle marked
@@ -363,6 +372,12 @@ properties.
 ### Bundle G: 3DS model parser (1 unit)
 
 New external requirement: lib3ds.
+
+This bundle is active and verified in the Visual Studio preset, root Visual
+Studio build, and MSYS2 preset. All three flows pass 102 tests. The tests
+generate their 3DS fixtures through lib3ds itself, then load geometry,
+animation state, materials, and a real resource-backed texture under an
+OpenGL context. No third-party model fixture is stored in the repository.
 
 - `Parser3ds.cpp`.
 

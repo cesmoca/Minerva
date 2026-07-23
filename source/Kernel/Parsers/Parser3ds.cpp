@@ -7,6 +7,8 @@
 
 #include <Kernel/Parsers/Parser3ds.h>
 
+#include <memory>
+
 using namespace std;
 
 Parser3ds::Parser3ds() {
@@ -61,8 +63,9 @@ void Parser3ds::loadModel(const boost::filesystem::path& file,
 		MAOMesh mmesh;
 
 		/* It is necessary to calculate the normals */
-		Lib3dsVector normals[m->faces * 3];
-		lib3ds_mesh_calculate_normals(m, normals);
+		std::unique_ptr<Lib3dsVector[]> normals(
+				new Lib3dsVector[m->faces * 3]);
+		lib3ds_mesh_calculate_normals(m, normals.get());
 
 		/* Vertex list */
 		//cout << "Vertex: " << m->points << endl;

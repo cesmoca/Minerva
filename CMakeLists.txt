@@ -4,7 +4,7 @@ project(
     Minerva
     VERSION 0.1.0
     DESCRIPTION "Restoration build for the Minerva augmented reality engine"
-    LANGUAGES CXX
+    LANGUAGES C CXX
 )
 
 set(CMAKE_CXX_STANDARD 17)
@@ -46,6 +46,43 @@ find_package(SDL_image 1.2 REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(SDL_ttf 2.0 REQUIRED)
 
+include(FetchContent)
+FetchContent_Declare(
+    lib3ds
+    URL https://deb.debian.org/debian/pool/main/lib3/lib3ds/lib3ds_1.3.0.orig.tar.gz
+    URL_HASH SHA512=a315bd0f75cf87d8e285b5a405fe9f033900e23b363cdcf079142dc59edc94e63666e8ab2c0097d939689cd8da0fdcacacaa15f50d0ac3e8a9f5c79b854ab23b
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(lib3ds)
+
+add_library(lib3ds STATIC
+    ${lib3ds_SOURCE_DIR}/lib3ds/io.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/vector.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/matrix.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/quat.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/tcb.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/ease.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/chunk.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/file.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/background.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/atmosphere.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/shadow.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/viewport.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/material.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/mesh.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/camera.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/light.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/tracks.c
+    ${lib3ds_SOURCE_DIR}/lib3ds/node.c
+)
+target_include_directories(lib3ds SYSTEM PUBLIC ${lib3ds_SOURCE_DIR})
+if(MSVC)
+    # lib3ds 1.3.0 only distinguished DLL builds in its public headers.
+    # Export-marked declarations also allow its unmodified API to link from
+    # the static restoration target without __declspec(dllimport).
+    target_compile_definitions(lib3ds PUBLIC LIB3DS_EXPORTS)
+endif()
+
 # Minerva's public 3D API is coupled to the vendored Bullet 2.78 headers.
 # Build only the two Bullet components required by the current bundle.
 set(BULLET_PHYSICS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/bullet-2.78")
@@ -72,6 +109,7 @@ add_library(minerva_kernel STATIC
     source/Kernel/Logger.cpp
     source/Kernel/PathPoint.cpp
     source/Kernel/Parsers/Parser.cpp
+    source/Kernel/Parsers/Parser3ds.cpp
     source/Kernel/Parsers/ParserObj.cpp
     source/Kernel/Parsers/ParserOrej.cpp
     source/Kernel/Resources/Resource.cpp
@@ -148,6 +186,7 @@ target_link_libraries(minerva_kernel
         PNG::PNG
         Freetype::Freetype
         OpenGL::GL
+        lib3ds
         BulletCollision
         LinearMath
 )
@@ -207,6 +246,7 @@ if(BUILD_TESTING)
         tests/Kernel/LoggerTests.cpp
         tests/Kernel/PathPointTests.cpp
         tests/Kernel/Parsers/ParserTests.cpp
+        tests/Kernel/Parsers/Parser3dsTests.cpp
         tests/Kernel/Parsers/MSLPreprocessorTests.cpp
         tests/Kernel/Resources/ResourceTests.cpp
         tests/Kernel/Resources/ResourceFileTests.cpp
