@@ -5,7 +5,8 @@ completed standard-library baseline and resource I/O phase plus the
 value/property, camera, Python binding, core MAO/logic foundations, SDL input,
 3D collision/rendering foundations, 2D image rendering, and native OreJ/OBJ
 and 3DS model parsing, 2D TrueType text rendering, ARToolKit tracking, the MAO
-factory, Bullet physics, SDL_mixer sound, and the world/render loop:
+and MLB factories, Bullet physics, SDL_mixer sound, the world/render loop,
+embedded Python scripting, and game-logic polling:
 
 - `minerva_kernel`, containing the logger, application end controller, path and
   abstract tracking state, MSL include preprocessor, resource classes,
@@ -13,7 +14,9 @@ factory, Bullet physics, SDL_mixer sound, and the world/render loop:
   active MAO/MLB classes, `InputEventController`, `MLBSensorKeyboard`,
   `TrackingMethodARTK`, `TrackingMethodFactory`, `MAOFactory`,
   `GLDebugDrawer`, `PhysicObject`, `PhysicDynamicObject`, and
-  `PhysicsController`, `MLBActuatorSound`, and `World`.
+  `PhysicsController`, `MLBActuatorSound`, `World`, the remaining spatial and
+  dynamic-object logic bricks, `MLBFactory`, `MGEModule`, `MPYWrapper`, and
+  `GameLogicController`.
 - `minerva_smoke`, a small executable that validates the compiled kernel.
 
 The generated MSL parser and scanner are committed to the repository, but they
@@ -21,8 +24,8 @@ are not part of a CMake target yet. Their original semantic actions directly
 depend on the world, resource, MAO, MLB, and physics domains. Keeping the files
 out of the baseline target avoids accidentally activating those subsystems.
 
-Scripting, generated MSL parser implementation, and the remaining engine
-closure classes are not part of the target yet.
+The generated MSL parser implementation and original executables are not part
+of a CMake target yet.
 
 ## Active third-party dependencies
 
@@ -294,7 +297,7 @@ all earlier phases compile and test with both the Visual Studio and MSYS2
 presets. The goal is compilation compatibility, not redesign or new behavior.
 No phase requires sample scenes, models, scripts, or other application assets.
 
-Bundles A through K are active and verified. Bundle L is next.
+Bundles A through L are active and verified. Bundle M is next.
 The remaining roadmap is grouped by external dependency transitions instead of
 single translation units. Every bundle must compile and test as one change on
 both toolchains before introducing the next dependency set. A bundle marked
@@ -468,6 +471,21 @@ FW-042.
 ### Bundle L: engine and Python closure (8 units)
 
 New external requirement: none.
+
+This bundle is active and verified in the Visual Studio preset, root Visual
+Studio build, and MSYS2 preset. All three flows pass 125 tests. Seven focused
+tests cover near and collision sensors, dynamic-object actuator configuration,
+factory creation/linking, script compilation, Python module access, and a full
+sensor/controller/actuator game-logic poll.
+
+The compatibility changes replace the obsolete `<python.hpp>` spelling,
+replace an MSVC-incompatible variable-length script buffer, use the Python 3
+module initializer and current `PyEval_EvalCode` signature, and give the
+compiled Python object its returned-reference ownership. Native tests receive
+`PYTHONHOME` from vcpkg's package-owned interpreter directory so embedded
+Debug Python can find its standard library. No third-party source was changed.
+Deferred factory, sensor, dynamic-instantiation, Python, and game-loop risks
+are recorded in FW-043.
 
 - `MLBSensorCollision.cpp`, `MLBSensorNear.cpp`, and
   `MLBActuatorAddDynamicObject.cpp`.

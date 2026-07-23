@@ -7,6 +7,8 @@
 
 #include <MLB/Controller/MLBControllerScript.h>
 
+#include <vector>
+
 using namespace std;
 
 MLBControllerScript::MLBControllerScript(const std::string& name, MAO& parent,
@@ -37,9 +39,9 @@ void MLBControllerScript::setCompiled(bool compiled) {
 void MLBControllerScript::compileScript() {
 	//Allocating the memory!
 	Resource& r = ResourcesManager::getInstance()->getResource(_path);
-	char buf [r.getSize() + 2]; //Allocating the memory!
+	vector<char> buf(r.getSize() + 2);
 
-	for(unsigned int i = 0; i<r.getSize(); i++)
+	for(size_t i = 0; i<r.getSize(); i++)
 		buf[i] = r.getData()[i];
 
 	buf[r.getSize()] = '\n';
@@ -47,9 +49,9 @@ void MLBControllerScript::compileScript() {
 
 	try {
 		_compiledObj = boost::python::object(boost::python::handle<>(
-				boost::python::borrowed(Py_CompileString((char*) &buf,
-						_path.generic_string().c_str(), Py_file_input))));
-	} catch (boost::python::error_already_set e) {
+				Py_CompileString(buf.data(),
+						_path.generic_string().c_str(), Py_file_input)));
+	} catch (const boost::python::error_already_set&) {
 		Logger::getInstance()->error("Error compiling the script: " + getName());
 		PyErr_Print();
 		//delete[] buf;

@@ -202,8 +202,10 @@ endif()
 # The scene parser, SDL rendering/audio, and additional OpenCV modules remain
 # excluded until their prerequisite phases are stable.
 add_library(minerva_kernel STATIC
+    source/Controllers/GameLogicController.cpp
     source/Controllers/InputEventController.cpp
     source/Controllers/PhysicsController.cpp
+    source/Factories/MLBFactory.cpp
     source/Factories/MAOFactory.cpp
     source/Factories/TrackingMethodFactory.cpp
     source/Factories/VideoFactory.cpp
@@ -241,6 +243,7 @@ add_library(minerva_kernel STATIC
     source/MAO/MAOValue.cpp
     source/MLB/MLB.cpp
     source/MLB/Actuator/MLBActuator.cpp
+    source/MLB/Actuator/MLBActuatorAddDynamicObject.cpp
     source/MLB/Actuator/MLBActuatorAng.cpp
     source/MLB/Actuator/MLBActuatorAnim.cpp
     source/MLB/Actuator/MLBActuatorChangePose.cpp
@@ -258,14 +261,19 @@ add_library(minerva_kernel STATIC
     source/MLB/Controller/MLBControllerNAND.cpp
     source/MLB/Controller/MLBControllerNOR.cpp
     source/MLB/Controller/MLBControllerOR.cpp
+    source/MLB/Controller/MLBControllerScript.cpp
     source/MLB/Sensor/MLBSensor.cpp
     source/MLB/Sensor/MLBSensorActuator.cpp
     source/MLB/Sensor/MLBSensorAlways.cpp
+    source/MLB/Sensor/MLBSensorCollision.cpp
     source/MLB/Sensor/MLBSensorDelay.cpp
     source/MLB/Sensor/MLBSensorKeyboard.cpp
+    source/MLB/Sensor/MLBSensorNear.cpp
     source/MLB/Sensor/MLBSensorProperty.cpp
     source/MLB/Sensor/MLBSensorRandom.cpp
     source/MPY/WrapperTypes.cpp
+    source/MPY/MGEModule.cpp
+    source/MPY/MPYWrapper.cpp
 )
 
 target_include_directories(minerva_kernel
@@ -356,8 +364,10 @@ if(BUILD_TESTING)
 
     add_executable(minerva_kernel_tests
         tests/Controllers/InputEventControllerTests.cpp
+        tests/Controllers/GameLogicControllerTests.cpp
         tests/Controllers/PhysicsControllerTests.cpp
         tests/Factories/MAOFactoryTests.cpp
+        tests/Factories/MLBFactoryTests.cpp
         tests/Factories/VideoFactoryTests.cpp
         tests/Kernel/EndControllerTests.cpp
         tests/Kernel/GLDebugDrawerTests.cpp
@@ -388,11 +398,14 @@ if(BUILD_TESTING)
         tests/MLB/MLBTests.cpp
         tests/MLB/Actuator/MLBActuatorTests.cpp
         tests/MLB/Actuator/MLBActuator3DTests.cpp
+        tests/MLB/Actuator/MLBActuatorAddDynamicObjectTests.cpp
         tests/MLB/Actuator/MLBActuatorSoundTests.cpp
         tests/MLB/Actuator/MLBActuatorVisibilityTests.cpp
         tests/MLB/Controller/MLBControllerTests.cpp
         tests/MLB/Sensor/MLBSensorTests.cpp
         tests/MLB/Sensor/MLBSensorKeyboardTests.cpp
+        tests/MLB/Sensor/MLBSensorSpatialTests.cpp
+        tests/MPY/PythonIntegrationTests.cpp
         tests/MPY/WrapperTypesTests.cpp
     )
     target_link_libraries(minerva_kernel_tests PRIVATE
@@ -409,9 +422,18 @@ if(BUILD_TESTING)
     set(MINERVA_KERNEL_TEST_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests/kernel)
     file(MAKE_DIRECTORY ${MINERVA_KERNEL_TEST_DIRECTORY})
     include(GoogleTest)
+    if(MSVC)
+        get_filename_component(
+            MINERVA_PYTHON_HOME "${Python_EXECUTABLE}" DIRECTORY
+        )
+        set(MINERVA_KERNEL_TEST_PROPERTIES
+            PROPERTIES ENVIRONMENT "PYTHONHOME=${MINERVA_PYTHON_HOME}"
+        )
+    endif()
     gtest_discover_tests(minerva_kernel_tests
         WORKING_DIRECTORY ${MINERVA_KERNEL_TEST_DIRECTORY}
         DISCOVERY_MODE PRE_TEST
+        ${MINERVA_KERNEL_TEST_PROPERTIES}
     )
 
     add_custom_target(minerva_tests

@@ -235,7 +235,7 @@ void MPYWrapper::initPython() {
 	try {
 		/* Init stuff */
 		Logger::getInstance()->out("Initializing python subsystem");
-		PyImport_AppendInittab("MGE", &initMGE);
+		PyImport_AppendInittab("MGE", &PyInit_MGE);
 		Py_Initialize();
 		main_module = object((handle<> (
 				borrowed(PyImport_AddModule("__main__")))));
@@ -287,7 +287,7 @@ void MPYWrapper::runScripts() {
 		if (o != NULL) {
 			mge.setCurrentController(c);
 			try {
-				handle<> ignore((PyEval_EvalCode((PyCodeObject*) o->ptr(),
+				handle<> ignore((PyEval_EvalCode(o->ptr(),
 						main_namespace.ptr(), main_namespace.ptr())));
 			} catch (error_already_set e) {
 				Logger::getInstance()->error("Error executing the script: "
