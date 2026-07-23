@@ -31,6 +31,11 @@ find_program(MINERVA_FLEXPP_EXECUTABLE
     NAMES flex++
     HINTS C:/msys64/usr/bin
 )
+find_path(MINERVA_FLEX_INCLUDE_DIR
+    NAMES FlexLexer.h
+    HINTS C:/msys64/usr/include
+    REQUIRED
+)
 
 include(cmake/MSLGeneration.cmake)
 
@@ -226,6 +231,9 @@ add_library(minerva_kernel STATIC
     source/Kernel/TrackingMethods/TrackingMethod.cpp
     source/Kernel/TrackingMethods/TrackingMethodARTK.cpp
     source/Kernel/Parsers/MSLPreprocessor.cpp
+    source/Kernel/Parsers/MSLProperties.cpp
+    source/Kernel/Parsers/MSLParser.cpp
+    source/Kernel/Parsers/MSLScanner.cpp
     source/Kernel/VideoSource.cpp
     source/Kernel/World.cpp
     source/MAO/MAO.cpp
@@ -289,6 +297,10 @@ target_include_directories(minerva_kernel
 target_include_directories(minerva_kernel SYSTEM PUBLIC
     "${BULLET_PHYSICS_SOURCE_DIR}/src"
 )
+target_include_directories(minerva_kernel SYSTEM PUBLIC
+    "${MINERVA_FLEX_INCLUDE_DIR}"
+)
+target_compile_definitions(minerva_kernel PUBLIC YY_USE_CLASS)
 
 target_link_libraries(minerva_kernel
     PUBLIC
@@ -323,6 +335,14 @@ endif()
 
 if(MSVC)
     target_compile_options(minerva_kernel PRIVATE /W4 /permissive- /EHsc)
+    set_source_files_properties(
+        source/Kernel/Parsers/MSLParser.cpp
+        PROPERTIES COMPILE_OPTIONS /Zc:strictStrings-
+    )
+    set_source_files_properties(
+        source/Kernel/Parsers/MSLScanner.cpp
+        PROPERTIES COMPILE_DEFINITIONS YY_NO_UNISTD_H
+    )
 else()
     target_compile_options(minerva_kernel PRIVATE -Wall -Wextra -Wpedantic)
     # Public Bullet 2.78 headers contain the same 64-bit casts as its sources.
@@ -376,6 +396,7 @@ if(BUILD_TESTING)
         tests/Kernel/PhysicObjectTests.cpp
         tests/Kernel/Parsers/ParserTests.cpp
         tests/Kernel/Parsers/Parser3dsTests.cpp
+        tests/Kernel/Parsers/MSLParserTests.cpp
         tests/Kernel/Parsers/MSLPreprocessorTests.cpp
         tests/Kernel/Resources/ResourceTests.cpp
         tests/Kernel/Resources/ResourceFileTests.cpp

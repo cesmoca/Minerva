@@ -22,7 +22,7 @@
 %header{
 #include <cstdlib>
 #include <FlexLexer.h>
-#include <cv.h>
+#include <opencv2/core.hpp>
 #include <btBulletDynamicsCommon.h>
 
 #include <Kernel/Parsers/MSLProperties.h>

@@ -6,7 +6,7 @@ value/property, camera, Python binding, core MAO/logic foundations, SDL input,
 3D collision/rendering foundations, 2D image rendering, and native OreJ/OBJ
 and 3DS model parsing, 2D TrueType text rendering, ARToolKit tracking, the MAO
 and MLB factories, Bullet physics, SDL_mixer sound, the world/render loop,
-embedded Python scripting, and game-logic polling:
+embedded Python scripting, game-logic polling, and the generated MSL frontend:
 
 - `minerva_kernel`, containing the logger, application end controller, path and
   abstract tracking state, MSL include preprocessor, resource classes,
@@ -16,16 +16,13 @@ embedded Python scripting, and game-logic polling:
   `GLDebugDrawer`, `PhysicObject`, `PhysicDynamicObject`, and
   `PhysicsController`, `MLBActuatorSound`, `World`, the remaining spatial and
   dynamic-object logic bricks, `MLBFactory`, `MGEModule`, `MPYWrapper`, and
-  `GameLogicController`.
+  `GameLogicController`, plus `MSLProperties` and the generated MSL
+  parser/scanner.
 - `minerva_smoke`, a small executable that validates the compiled kernel.
 
-The generated MSL parser and scanner are committed to the repository, but they
-are not part of a CMake target yet. Their original semantic actions directly
-depend on the world, resource, MAO, MLB, and physics domains. Keeping the files
-out of the baseline target avoids accidentally activating those subsystems.
-
-The generated MSL parser implementation and original executables are not part
-of a CMake target yet.
+The generated MSL parser and scanner are committed and compiled directly;
+normal builds do not regenerate them. Only the original executables remain
+outside the active CMake targets.
 
 ## Active third-party dependencies
 
@@ -36,6 +33,7 @@ embedded Python and matching Boost.Python. Input requires SDL 1.2. Rendering
 requires desktop compatibility OpenGL, the vendored Bullet 2.78 sources,
 SDL_image 1.2 with JPEG and PNG codecs, and SDL_ttf 2.0.11 with FreeType.
 Sound and world initialization require SDL_mixer 1.2.
+The generated MSL scanner requires the Flex++ runtime header `FlexLexer.h`.
 The 3DS parser requires lib3ds 1.3.0. AR tracking requires the vendored
 ARToolKit 2.72.1 sources, desktop GLU, and FreeGLUT. CMake uses installed
 packages for the other production dependencies.
@@ -297,7 +295,7 @@ all earlier phases compile and test with both the Visual Studio and MSYS2
 presets. The goal is compilation compatibility, not redesign or new behavior.
 No phase requires sample scenes, models, scripts, or other application assets.
 
-Bundles A through L are active and verified. Bundle M is next.
+Bundles A through M are active and verified. Bundle N is next.
 The remaining roadmap is grouped by external dependency transitions instead of
 single translation units. Every bundle must compile and test as one change on
 both toolchains before introducing the next dependency set. A bundle marked
@@ -501,6 +499,20 @@ both factories precede the full Python wrapper and game-logic controller.
 New external requirement: a cross-toolchain-accessible `FlexLexer.h` runtime
 header. The already-installed `flex++` and `bison++` generators are needed only
 when regenerating the committed outputs.
+
+This bundle is active and verified in the Visual Studio preset, root Visual
+Studio build, and MSYS2 preset. All three flows pass 127 tests. The focused
+tests cover parser-property defaults/merging and representative application,
+renderable, color, scalar, and global-reference semantic actions.
+
+CMake compiles the committed Bison++/Flex++ outputs in class mode and locates
+the installed MSYS2 Flex runtime header for both toolchains. The obsolete
+OpenCV include was replaced consistently in the grammar and generated files;
+the scanner avoids a duplicate Flex class declaration. MSVC-only options keep
+the historical Bison++ string-literal signature and suppress Flex's POSIX
+`unistd.h` include. The outputs were not regenerated and no third-party source
+was changed. Deferred grammar, parser-state, ownership, validation, and error
+handling risks are recorded in FW-044.
 
 - `MSLProperties.cpp`, `MSLParser.cpp`, and `MSLScanner.cpp`.
 

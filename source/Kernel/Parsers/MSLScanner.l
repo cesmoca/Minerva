@@ -2,6 +2,7 @@
 %option noyywrap
 
 %{
+#undef yyFlexLexer
 #include <Kernel/Parsers/MSLParser.h>
 using namespace std;
 %}

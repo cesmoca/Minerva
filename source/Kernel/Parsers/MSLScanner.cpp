@@ -781,6 +781,7 @@ static const flex_int16_t yy_rule_linenum[95] =
 #define YY_RESTORE_YY_MORE_OFFSET
 #line 1 "source/Kernel/Parsers/MSLScanner.l"
 #line 5 "source/Kernel/Parsers/MSLScanner.l"
+#undef yyFlexLexer
 #include <Kernel/Parsers/MSLParser.h>
 using namespace std;
 #line 786 "source/Kernel/Parsers/MSLScanner.cpp"
@@ -2659,5 +2660,4 @@ void yyfree (void * ptr )
 /* %ok-for-header */
 
 #line 122 "source/Kernel/Parsers/MSLScanner.l"
-
 

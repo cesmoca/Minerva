@@ -11,7 +11,7 @@
 
 #include <string>
 #include <iostream>
-#include <cv.h>
+#include <opencv2/core.hpp>
 #include <btBulletDynamicsCommon.h>
 #include <MAO/MAOProperty.h>
 
