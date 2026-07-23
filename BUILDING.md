@@ -4,12 +4,13 @@ Minerva is being restored in stages. The current CMake build compiles the
 completed standard-library baseline and resource I/O phase plus the
 value/property, camera, Python binding, core MAO/logic foundations, SDL input,
 3D collision/rendering foundations, 2D image rendering, and native OreJ/OBJ
-and 3DS model parsing, and 2D TrueType text rendering:
+and 3DS model parsing, 2D TrueType text rendering, and ARToolKit tracking:
 
 - `minerva_kernel`, containing the logger, application end controller, path and
   abstract tracking state, MSL include preprocessor, resource classes,
   `MAOValue`, `MAOProperty`, `VideoSource`, `VideoFactory`, `WrapperTypes`, the
-  active MAO/MLB classes, `InputEventController`, and `MLBSensorKeyboard`.
+  active MAO/MLB classes, `InputEventController`, `MLBSensorKeyboard`,
+  `TrackingMethodARTK`, and `TrackingMethodFactory`.
 - `minerva_smoke`, a small executable that validates the compiled kernel.
 
 The generated MSL parser and scanner are committed to the repository, but they
@@ -17,9 +18,9 @@ are not part of a CMake target yet. Their original semantic actions directly
 depend on the world, resource, MAO, MLB, and physics domains. Keeping the files
 out of the baseline target avoids accidentally activating those subsystems.
 
-Concrete tracking, physics controllers, scripting, audio, generated MSL parser
-implementation, the MAO factory, and the remaining renderer classes are not
-part of the target yet.
+Physics controllers, scripting, audio, generated MSL parser implementation,
+the MAO factory, and the remaining renderer classes are not part of the target
+yet.
 
 ## Active third-party dependencies
 
@@ -29,8 +30,9 @@ zlib and may use bzip2. The value and property classes require OpenCV Core;
 embedded Python and matching Boost.Python. Input requires SDL 1.2. Rendering
 requires desktop compatibility OpenGL, the vendored Bullet 2.78 sources,
 SDL_image 1.2 with JPEG and PNG codecs, and SDL_ttf 2.0.11 with FreeType.
-The 3DS parser requires lib3ds 1.3.0. CMake uses installed packages for the
-other production dependencies.
+The 3DS parser requires lib3ds 1.3.0. AR tracking requires the vendored
+ARToolKit 2.72.1 sources, desktop GLU, and FreeGLUT. CMake uses installed
+packages for the other production dependencies.
 
 lib3ds 1.3.0 has no current vcpkg or MSYS2 UCRT64 package matching both build
 flows. CMake therefore downloads the pristine upstream archive mirrored by
@@ -41,12 +43,22 @@ lib3ds source files identify their license as LGPL 2.1 or later. A first
 configure therefore needs network access unless CMake's FetchContent cache is
 already populated.
 
+Bundle H builds the vendored ARToolKit `libAR` and `gsub` source boundaries as
+static targets. ARMulti and ARToolKit camera backends remain excluded because
+Minerva supplies frames through its existing OpenCV `VideoFactory`. The
+original `gsub.c` calls GLUT without including its declaration, so CMake
+force-includes the current FreeGLUT header at that target only and leaves the
+vendored source unchanged. The AR target uses C11 because current C23 changes
+the meaning of its legacy empty parameter lists. The repository's
+`lib/ARToolKit/COPYING.txt` contains the GNU GPL version 2 terms supplied with
+that source.
+
 For Visual Studio, the presets use a standalone vcpkg installation at
 `C:\vcpkg` and the `x64-windows-static-md` triplet. Install the active packages
 with:
 
 ```powershell
-C:\vcpkg\vcpkg.exe install boost-filesystem boost-python libzip gtest opencv4[core] sdl1 sdl1-image sdl1-ttf --triplet x64-windows-static-md --overlay-ports="$PWD\ports"
+C:\vcpkg\vcpkg.exe install boost-filesystem boost-python libzip freeglut gtest opencv4[core] sdl1 sdl1-image sdl1-ttf --triplet x64-windows-static-md --overlay-ports="$PWD\ports"
 ```
 
 The repository-local `sdl1-image` and `sdl1-ttf` overlay ports pin the official
@@ -61,7 +73,7 @@ Debug and Release dependencies use the matching MSVC runtime libraries.
 For MSYS2 UCRT64, install the matching packages with:
 
 ```powershell
-C:\msys64\usr\bin\pacman.exe --noconfirm -S --needed mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-gtest mingw-w64-ucrt-x86_64-opencv mingw-w64-ucrt-x86_64-SDL mingw-w64-ucrt-x86_64-SDL_image mingw-w64-ucrt-x86_64-SDL_ttf
+C:\msys64\usr\bin\pacman.exe --noconfirm -S --needed mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-freeglut mingw-w64-ucrt-x86_64-gtest mingw-w64-ucrt-x86_64-opencv mingw-w64-ucrt-x86_64-SDL mingw-w64-ucrt-x86_64-SDL_image mingw-w64-ucrt-x86_64-SDL_ttf
 ```
 
 The MSYS2 preset restricts package discovery to `C:\msys64\ucrt64`, preventing
@@ -275,7 +287,7 @@ all earlier phases compile and test with both the Visual Studio and MSYS2
 presets. The goal is compilation compatibility, not redesign or new behavior.
 No phase requires sample scenes, models, scripts, or other application assets.
 
-Bundles A through G are active and verified. Bundle H is next.
+Bundles A through H are active and verified. Bundle I is next.
 The remaining roadmap is grouped by external dependency transitions instead of
 single translation units. Every bundle must compile and test as one change on
 both toolchains before introducing the next dependency set. A bundle marked
@@ -385,6 +397,13 @@ OpenGL context. No third-party model fixture is stored in the repository.
 
 New external requirements: the vendored ARToolKit 2.72.1 libraries plus their
 desktop GLU/GLUT support. OpenGL and the mark classes are already active.
+
+This bundle is active and verified in the Visual Studio preset, root Visual
+Studio build, and MSYS2 preset. All three flows pass 105 tests. The tests
+construct and activate the real ARToolKit tracker, load a deterministic valid
+pattern through the resource path, and verify factory identity and inactive
+poll gating without a fake camera backend. Live camera/marker correctness and
+the legacy frame-format risks are recorded in FW-039.
 
 - `TrackingMethodARTK.cpp`.
 - `TrackingMethodFactory.cpp`.

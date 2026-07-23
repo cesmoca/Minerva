@@ -40,6 +40,7 @@ find_package(libzip CONFIG REQUIRED)
 find_package(OpenCV 4 REQUIRED COMPONENTS core videoio)
 find_package(SDL REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(FreeGLUT CONFIG REQUIRED)
 find_package(JPEG REQUIRED)
 find_package(PNG REQUIRED)
 find_package(SDL_image 1.2 REQUIRED)
@@ -83,6 +84,81 @@ if(MSVC)
     target_compile_definitions(lib3ds PUBLIC LIB3DS_EXPORTS)
 endif()
 
+set(ARTOOLKIT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/ARToolKit")
+add_library(artoolkit_ar STATIC
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/arDetectMarker.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/arDetectMarker2.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/arGetCode.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/arGetMarkerInfo.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/arGetTransMat.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/arGetTransMat2.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/arGetTransMat3.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/arGetTransMatCont.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/arLabeling.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/arUtil.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mAlloc.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mAllocDup.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mAllocInv.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mAllocMul.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mAllocTrans.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mAllocUnit.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mDet.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mDisp.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mDup.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mFree.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mInv.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mMul.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mPCA.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mSelfInv.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mTrans.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/mUnit.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/paramChangeSize.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/paramDecomp.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/paramDisp.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/paramDistortion.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/paramFile.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/paramGet.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/vAlloc.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/vDisp.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/vFree.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/vHouse.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/vInnerP.c
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/AR/vTridiag.c
+)
+set_target_properties(artoolkit_ar PROPERTIES
+    C_STANDARD 11
+    C_STANDARD_REQUIRED YES
+)
+target_include_directories(artoolkit_ar SYSTEM PUBLIC
+    "${ARTOOLKIT_SOURCE_DIR}/include"
+)
+
+if(TARGET FreeGLUT::freeglut_static)
+    set(MINERVA_FREEGLUT_TARGET FreeGLUT::freeglut_static)
+else()
+    set(MINERVA_FREEGLUT_TARGET FreeGLUT::freeglut)
+endif()
+
+add_library(artoolkit_gsub STATIC
+    ${ARTOOLKIT_SOURCE_DIR}/lib/SRC/Gl/gsub.c
+)
+target_include_directories(artoolkit_gsub SYSTEM PUBLIC
+    "${ARTOOLKIT_SOURCE_DIR}/include"
+)
+target_link_libraries(artoolkit_gsub
+    PUBLIC
+        artoolkit_ar
+        ${MINERVA_FREEGLUT_TARGET}
+        OpenGL::GL
+        OpenGL::GLU
+)
+if(MSVC)
+    # ARToolKit 2.72.1 calls GLUT from gsub.c without including its declaration.
+    target_compile_options(artoolkit_gsub PRIVATE "/FIGL/glut.h")
+else()
+    target_compile_options(artoolkit_gsub PRIVATE -include GL/glut.h)
+endif()
+
 # Minerva's public 3D API is coupled to the vendored Bullet 2.78 headers.
 # Build only the two Bullet components required by the current bundle.
 set(BULLET_PHYSICS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/bullet-2.78")
@@ -100,10 +176,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 # This restoration target grows one dependency-ordered subsystem at a time.
-# The scene parser, SDL rendering/audio, additional OpenCV modules, ARToolKit,
-# and model loaders remain excluded until their prerequisite phases are stable.
+# The scene parser, SDL rendering/audio, and additional OpenCV modules remain
+# excluded until their prerequisite phases are stable.
 add_library(minerva_kernel STATIC
     source/Controllers/InputEventController.cpp
+    source/Factories/TrackingMethodFactory.cpp
     source/Factories/VideoFactory.cpp
     source/Kernel/EndController.cpp
     source/Kernel/Logger.cpp
@@ -117,6 +194,7 @@ add_library(minerva_kernel STATIC
     source/Kernel/Resources/ResourceZip.cpp
     source/Kernel/Resources/ResourcesManager.cpp
     source/Kernel/TrackingMethods/TrackingMethod.cpp
+    source/Kernel/TrackingMethods/TrackingMethodARTK.cpp
     source/Kernel/Parsers/MSLPreprocessor.cpp
     source/Kernel/VideoSource.cpp
     source/MAO/MAO.cpp
@@ -186,6 +264,8 @@ target_link_libraries(minerva_kernel
         PNG::PNG
         Freetype::Freetype
         OpenGL::GL
+        OpenGL::GLU
+        artoolkit_gsub
         lib3ds
         BulletCollision
         LinearMath
@@ -253,6 +333,8 @@ if(BUILD_TESTING)
         tests/Kernel/Resources/ResourceZipTests.cpp
         tests/Kernel/Resources/ResourcesManagerTests.cpp
         tests/Kernel/TrackingMethods/TrackingMethodTests.cpp
+        tests/Kernel/TrackingMethods/TrackingMethodARTKTests.cpp
+        tests/Factories/TrackingMethodFactoryTests.cpp
         tests/Kernel/VideoSourceTests.cpp
         tests/MAO/MAOTests.cpp
         tests/MAO/MAOMarkTests.cpp

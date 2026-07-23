@@ -9,6 +9,15 @@
 
 using namespace std;
 
+extern "C" {
+extern int pattern_num;
+extern int patf[AR_PATT_NUM_MAX];
+extern int pat[AR_PATT_NUM_MAX][4][AR_PATT_SIZE_Y * AR_PATT_SIZE_X * 3];
+extern double patpow[AR_PATT_NUM_MAX][4];
+extern int patBW[AR_PATT_NUM_MAX][4][AR_PATT_SIZE_Y * AR_PATT_SIZE_X * 3];
+extern double patpowBW[AR_PATT_NUM_MAX][4];
+}
+
 TrackingMethodARTK::TrackingMethodARTK() :
 		TrackingMethod() {
 	_vectorMAOMark = std::vector<MAOMark*>();
@@ -167,13 +176,6 @@ int TrackingMethodARTK::loadPattFromResource(Resource& r) {
 	int patno;
 	int h, i, j, l, m;
 	int i1, i2, i3;
-
-	extern int pattern_num;
-	extern int patf[AR_PATT_NUM_MAX];
-	extern int pat[AR_PATT_NUM_MAX][4][AR_PATT_SIZE_Y * AR_PATT_SIZE_X * 3];
-	extern double patpow[AR_PATT_NUM_MAX][4];
-	extern int patBW[AR_PATT_NUM_MAX][4][AR_PATT_SIZE_Y * AR_PATT_SIZE_X * 3];
-	extern double patpowBW[AR_PATT_NUM_MAX][4];
 
 	if (pattern_num == -1) {
 		for (i = 0; i < AR_PATT_NUM_MAX; i++)

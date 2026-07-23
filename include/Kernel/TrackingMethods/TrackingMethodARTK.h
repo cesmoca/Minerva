@@ -15,7 +15,7 @@
 #include <MAO/MAOMark.h>
 #include <MAO/MAOMarksGroup.h>
 
-#include <cv.h>
+#include <opencv2/core.hpp>
 #include <AR/ar.h>
 #include <AR/gsub.h>
 
