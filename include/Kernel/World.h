@@ -12,7 +12,10 @@
 #include <SDL_ttf.h>
 #include <SDL_mixer.h>
 
-#include <cv.h>
+#include <opencv2/core.hpp>
+#ifdef WIN32
+#include <windows.h>
+#endif
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <GL/glut.h>

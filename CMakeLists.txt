@@ -44,8 +44,29 @@ find_package(FreeGLUT CONFIG REQUIRED)
 find_package(JPEG REQUIRED)
 find_package(PNG REQUIRED)
 find_package(SDL_image 1.2 REQUIRED)
+find_package(SDL_mixer 1.2 REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(SDL_ttf 2.0 REQUIRED)
+
+if(MSVC)
+    # vcpkg's static SDL_mixer archive keeps its built-in MIDI backends in
+    # separate package-owned archives that FindSDL_mixer does not propagate.
+    get_filename_component(
+        MINERVA_SDL_MIXER_LIBRARY_DIR "${SDL_MIXER_LIBRARY}" DIRECTORY
+    )
+    find_library(MINERVA_SDL_MIXER_TIMIDITY_LIBRARY
+        NAMES timidity
+        PATHS "${MINERVA_SDL_MIXER_LIBRARY_DIR}"
+        NO_DEFAULT_PATH
+        REQUIRED
+    )
+    find_library(MINERVA_SDL_MIXER_NATIVE_MIDI_LIBRARY
+        NAMES native_midi
+        PATHS "${MINERVA_SDL_MIXER_LIBRARY_DIR}"
+        NO_DEFAULT_PATH
+        REQUIRED
+    )
+endif()
 
 include(FetchContent)
 FetchContent_Declare(
@@ -204,6 +225,7 @@ add_library(minerva_kernel STATIC
     source/Kernel/TrackingMethods/TrackingMethodARTK.cpp
     source/Kernel/Parsers/MSLPreprocessor.cpp
     source/Kernel/VideoSource.cpp
+    source/Kernel/World.cpp
     source/MAO/MAO.cpp
     source/MAO/MAOMark.cpp
     source/MAO/MAOMarksGroup.cpp
@@ -229,6 +251,7 @@ add_library(minerva_kernel STATIC
     source/MLB/Actuator/MLBActuatorQuitApp.cpp
     source/MLB/Actuator/MLBActuatorRandom.cpp
     source/MLB/Actuator/MLBActuatorRelativePose.cpp
+    source/MLB/Actuator/MLBActuatorSound.cpp
     source/MLB/Actuator/MLBActuatorVisibility.cpp
     source/MLB/Controller/MLBController.cpp
     source/MLB/Controller/MLBControllerAND.cpp
@@ -251,6 +274,7 @@ target_include_directories(minerva_kernel
         ${OpenCV_INCLUDE_DIRS}
         ${SDL_INCLUDE_DIRS}
         ${SDL_IMAGE_INCLUDE_DIRS}
+        ${SDL_MIXER_INCLUDE_DIRS}
         ${SDL_TTF_INCLUDE_DIRS}
 )
 
@@ -266,6 +290,9 @@ target_link_libraries(minerva_kernel
         ${OpenCV_LIBS}
         ${SDL_LIBRARIES}
         ${SDL_IMAGE_LIBRARIES}
+        ${SDL_MIXER_LIBRARIES}
+        $<$<CXX_COMPILER_ID:MSVC>:${MINERVA_SDL_MIXER_TIMIDITY_LIBRARY}>
+        $<$<CXX_COMPILER_ID:MSVC>:${MINERVA_SDL_MIXER_NATIVE_MIDI_LIBRARY}>
         ${SDL_TTF_LIBRARIES}
         JPEG::JPEG
         PNG::PNG
@@ -348,6 +375,7 @@ if(BUILD_TESTING)
         tests/Kernel/TrackingMethods/TrackingMethodARTKTests.cpp
         tests/Factories/TrackingMethodFactoryTests.cpp
         tests/Kernel/VideoSourceTests.cpp
+        tests/Kernel/WorldTests.cpp
         tests/MAO/MAOTests.cpp
         tests/MAO/MAOMarkTests.cpp
         tests/MAO/MAOMarksGroupTests.cpp
@@ -360,6 +388,7 @@ if(BUILD_TESTING)
         tests/MLB/MLBTests.cpp
         tests/MLB/Actuator/MLBActuatorTests.cpp
         tests/MLB/Actuator/MLBActuator3DTests.cpp
+        tests/MLB/Actuator/MLBActuatorSoundTests.cpp
         tests/MLB/Actuator/MLBActuatorVisibilityTests.cpp
         tests/MLB/Controller/MLBControllerTests.cpp
         tests/MLB/Sensor/MLBSensorTests.cpp
