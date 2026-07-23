@@ -17,8 +17,13 @@
 #include <Kernel/Parsers/MSLPreprocessor.h>
 #include <MPY/MPYWrapper.h>
 #include <string>
-#include <unistd.h>
 #include <sstream>
+
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 
 using namespace std;
 

@@ -1,594 +1,74 @@
 # Building Minerva
 
-Minerva is being restored in stages. The current CMake build compiles the
-completed standard-library baseline and resource I/O phase plus the
-value/property, camera, Python binding, core MAO/logic foundations, SDL input,
-3D collision/rendering foundations, 2D image rendering, and native OreJ/OBJ
-and 3DS model parsing, 2D TrueType text rendering, ARToolKit tracking, the MAO
-and MLB factories, Bullet physics, SDL_mixer sound, the world/render loop,
-embedded Python scripting, game-logic polling, and the generated MSL frontend:
+This document is the authoritative source-build guide for Minerva. The project
+uses CMake and C++17 and currently supports two tested Windows x64 toolchains:
 
-- `minerva_kernel`, containing the logger, application end controller, path and
-  abstract tracking state, MSL include preprocessor, resource classes,
-  `MAOValue`, `MAOProperty`, `VideoSource`, `VideoFactory`, `WrapperTypes`, the
-  active MAO/MLB classes, `InputEventController`, `MLBSensorKeyboard`,
-  `TrackingMethodARTK`, `TrackingMethodFactory`, `MAOFactory`,
-  `GLDebugDrawer`, `PhysicObject`, `PhysicDynamicObject`, and
-  `PhysicsController`, `MLBActuatorSound`, `World`, the remaining spatial and
-  dynamic-object logic bricks, `MLBFactory`, `MGEModule`, `MPYWrapper`, and
-  `GameLogicController`, plus `MSLProperties` and the generated MSL
-  parser/scanner.
-- `minerva_smoke`, a small executable that validates the compiled kernel.
+| Toolchain | Configure preset | Build output |
+| --- | --- | --- |
+| Visual Studio 2026 + vcpkg | `visual-studio-debug` | `build/visual-studio-debug/Debug` |
+| MSYS2 UCRT64 | `windows-msys2-debug` | `build/windows-msys2-debug` |
 
-The generated MSL parser and scanner are committed and compiled directly;
-normal builds do not regenerate them. Only the original executables remain
-outside the active CMake targets.
+Matching `-release` configure, build, and test presets are also provided.
 
-## Active third-party dependencies
+## Build products
 
-The resource phase requires Boost.Filesystem and libzip; libzip also requires
-zlib and may use bzip2. The value and property classes require OpenCV Core;
-`VideoSource` also requires OpenCV Video I/O. `WrapperTypes` requires
-embedded Python and matching Boost.Python. Input requires SDL 1.2. Rendering
-requires desktop compatibility OpenGL, the vendored Bullet 2.78 sources,
-SDL_image 1.2 with JPEG and PNG codecs, and SDL_ttf 2.0.11 with FreeType.
-Sound and world initialization require SDL_mixer 1.2.
-The generated MSL scanner requires the Flex++ runtime header `FlexLexer.h`.
-The 3DS parser requires lib3ds 1.3.0. AR tracking requires the vendored
-ARToolKit 2.72.1 sources, desktop GLU, and FreeGLUT. CMake uses installed
-packages for the other production dependencies.
+The default build creates:
 
-lib3ds 1.3.0 has no current vcpkg or MSYS2 UCRT64 package matching both build
-flows. CMake therefore downloads the pristine upstream archive mirrored by
-Debian, verifies SHA-512
-`a315bd0f75cf87d8e285b5a405fe9f033900e23b363cdcf079142dc59edc94e63666e8ab2c0097d939689cd8da0fdcacacaa15f50d0ac3e8a9f5c79b854ab23b`,
-and builds its C sources as the same static target under MSVC and MSYS2.
-lib3ds source files identify their license as LGPL 2.1 or later. A first
-configure therefore needs network access unless CMake's FetchContent cache is
-already populated.
+| Target | Purpose |
+| --- | --- |
+| `minerva_kernel` | Static engine library |
+| `minerva` | MSL authoring and packaging frontend |
+| `player` | Packaged-application runtime |
+| `minerva_smoke` | Core and MSL-preprocessor smoke utility |
+| `minerva_kernel_tests` | GoogleTest executable |
+| `minerva_tests` | Builds every executable and runs CTest |
+| `minerva_generate_msl` | Regenerates the committed MSL parser and scanner |
 
-Bundle H builds the vendored ARToolKit `libAR` and `gsub` source boundaries as
-static targets. ARMulti and ARToolKit camera backends remain excluded because
-Minerva supplies frames through its existing OpenCV `VideoFactory`. The
-original `gsub.c` calls GLUT without including its declaration, so CMake
-force-includes the current FreeGLUT header at that target only and leaves the
-vendored source unchanged. The AR target uses C11 because current C23 changes
-the meaning of its legacy empty parameter lists. The repository's
-`lib/ARToolKit/COPYING.txt` contains the GNU GPL version 2 terms supplied with
-that source.
+## Common requirements
 
-For Visual Studio, the presets use a standalone vcpkg installation at
-`C:\vcpkg` and the `x64-windows-static-md` triplet. Install the active packages
-with:
+- 64-bit Windows
+- CMake 3.20 or newer
+- Git
+- A C++17 compiler
+- Network access during the first configure unless fetched dependencies are
+  already cached
+- Flex/Flex++'s `FlexLexer.h` runtime header
+
+Minerva depends on Boost.Filesystem, Boost.Python, Python, libzip, OpenCV Core
+and Video I/O, SDL 1.2, SDL_image 1.2, SDL_mixer 1.2, SDL_ttf 2.0, FreeType,
+JPEG, PNG, OpenGL/GLU, and FreeGLUT. Bullet 2.78 and ARToolKit 2.72.1 are
+included in the repository.
+
+The build downloads and compiles lib3ds 1.3.0 from its pinned source archive.
+When no installed GoogleTest package is available, test-enabled builds also
+download the pinned GoogleTest source.
+
+## Visual Studio and vcpkg
+
+The supplied preset expects:
+
+- Visual Studio 2026 with the Desktop development with C++ workload;
+- a Windows SDK;
+- vcpkg at `C:\vcpkg`;
+- the `x64-windows-static-md` triplet; and
+- MSYS2 Flex installed at `C:\msys64\usr\include\FlexLexer.h`.
+
+From the repository root, install the vcpkg dependencies:
 
 ```powershell
 C:\vcpkg\vcpkg.exe install boost-filesystem boost-python libzip freeglut gtest opencv4[core] sdl1 sdl1-image sdl1-mixer sdl1-ttf --triplet x64-windows-static-md --overlay-ports="$PWD\ports"
 ```
 
-The repository-local `sdl1-image` and `sdl1-ttf` overlay ports pin the official
-SDL_image 1.2.12 and SDL_ttf 2.0.11 sources and build them statically against
-the same SDL 1.2 triplet. SDL_image uses static JPEG and PNG support; SDL_ttf
-uses the triplet's FreeType package. This avoids mixing the static vcpkg SDL
-library with incompatible DLL runtime families.
+The repository's `ports` directory supplies pinned SDL_image and SDL_ttf
+overlay ports compatible with the static SDL 1.2 triplet.
 
-The upstream vcpkg `sdl1-mixer` port builds its built-in Timidity and native
-MIDI backends as separate archives. CMake links those package-owned archives
-only for the static MSVC family; MSYS2 uses its matching UCRT64 import library.
-
-The Visual Studio preset supplies vcpkg's CMake toolchain file and triplet so
-Debug and Release dependencies use the matching MSVC runtime libraries.
-
-For MSYS2 UCRT64, install the matching packages with:
+Install the Flex runtime header through MSYS2:
 
 ```powershell
-C:\msys64\usr\bin\pacman.exe --noconfirm -S --needed mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-freeglut mingw-w64-ucrt-x86_64-gtest mingw-w64-ucrt-x86_64-opencv mingw-w64-ucrt-x86_64-SDL mingw-w64-ucrt-x86_64-SDL_image mingw-w64-ucrt-x86_64-SDL_mixer mingw-w64-ucrt-x86_64-SDL_ttf
+C:\msys64\usr\bin\pacman.exe --noconfirm -S --needed flex
 ```
 
-The MSYS2 preset restricts package discovery to `C:\msys64\ucrt64`, preventing
-MSVC and MinGW packages from being mixed. GoogleTest retains its existing
-find-first, pinned FetchContent fallback, but Boost.Filesystem, Boost.Python,
-embedded Python, libzip, and OpenCV Core and Video I/O must be installed before
-configuration. SDL 1.2 is intentionally used for the original event/key API;
-SDL2 and SDL3 are not source-compatible substitutes for this restoration
-phase.
-
-The text-rendering tests use a real installed TrueType font instead of a
-repository asset. They search common Windows Arial/Caladea and Linux DejaVu
-locations and report a clear test failure if none is available.
-
-## Regenerating the MSL parser and scanner
-
-Normal Visual Studio and CMake builds use the committed generated files and do
-not require parser-generator tools. CMake exposes a `minerva_generate_msl`
-target for intentional regeneration. If any generated output is missing and
-both generators are detected, that target is added to the normal build and
-recreates the files automatically.
-
-If Bison++ or Flex++ is unavailable, CMake does not install packages or access
-the network during configuration. Such system changes require an explicit user
-decision and are not portable across package managers. The baseline build
-continues when committed outputs exist; if outputs are missing, CMake prints a
-warning directing the user to the manual procedure below.
-
-Follow this section when setting up the tools, when `MSLParser.y` or
-`MSLScanner.l` changes, or when verifying the historical generators.
-
-The grammar uses the obsolete Bison++ dialect, not the current GNU Bison C++
-interface. The verified tool versions are:
-
-- Bison++ source package 1.21.11 with the Debian 1.21.11-5 portability patches.
-- Flex/Flex++ 2.6.4.
-- MSYS2 UCRT64 GCC; GCC 16.1.0 was used for the verified Bison++ build.
-
-Bison++ has stale embedded version text and prints `1.21.9-1` when invoked with
-`-V`. The downloaded source and Debian changelog are nevertheless version
-1.21.11. Verify the archive hashes below instead of relying on that banner.
-
-### 1. Install the MSYS2 build tools
-
-Open an **MSYS2 UCRT64** terminal and run:
-
-```sh
-pacman --noconfirm -S --needed flex patch make mingw-w64-ucrt-x86_64-gcc
-```
-
-The `flex` package installs both `flex` and `flex++`. Bison++ is not available
-as an MSYS2 package and must be built from source.
-
-### 2. Download the verified Bison++ source
-
-Use an empty disposable directory. These commands deliberately keep the old
-generator outside the repository:
-
-```sh
-mkdir -p /c/tmp/minerva-parser-tools
-cd /c/tmp/minerva-parser-tools
-
-curl.exe -fL https://deb.debian.org/debian/pool/main/b/bison++/bison++_1.21.11.orig.tar.gz -o bison++_1.21.11.orig.tar.gz
-curl.exe -fL https://deb.debian.org/debian/pool/main/b/bison++/bison++_1.21.11-5.debian.tar.xz -o bison++_1.21.11-5.debian.tar.xz
-curl.exe -fL https://deb.debian.org/debian/pool/main/b/bison++/bison++_1.21.11-5.dsc -o bison++_1.21.11-5.dsc
-```
-
-Calculate the SHA-256 hashes:
-
-```sh
-sha256sum bison++_1.21.11.orig.tar.gz bison++_1.21.11-5.debian.tar.xz
-```
-
-The results must be:
-
-```text
-d274bd25b354b50fd64884883ee46aba22e17728ee190f063db0b7254b662517  bison++_1.21.11.orig.tar.gz
-cb737fb2ce79acc968b9cc183b4d77eae9a30daed9d1fb170349b5591dd32de5  bison++_1.21.11-5.debian.tar.xz
-```
-
-The same hashes are recorded in the downloaded Debian `.dsc` descriptor.
-
-### 3. Extract and patch Bison++
-
-The original tarball contains a Unix `bison` symbolic link that Windows may
-refuse to create. Exclude that optional alias during extraction:
-
-```sh
-cd /c/tmp/minerva-parser-tools
-tar -xzf bison++_1.21.11.orig.tar.gz --exclude=bison++-1.21.11/bison
-tar -xJf bison++_1.21.11-5.debian.tar.xz -C bison++-1.21.11
-cd bison++-1.21.11
-```
-
-Apply Debian's published portability patches in their declared order:
-
-```sh
-while read patch_name; do
-    patch -p1 < debian/patches/${patch_name}
-done < debian/patches/series
-```
-
-### 4. Compile and install Bison++ into the disposable directory
-
-Configure and compile with the UCRT64 compiler:
-
-```sh
-export PATH=/ucrt64/bin:/usr/bin
-./configure --prefix=/c/tmp/minerva-parser-tools/install
-make -j2
-```
-
-The build emits many warnings caused by the generator's 1990s C++ source, but
-it completes with the current compiler. The old install hook expects the
-excluded `bison` alias, so provide a copy before installing:
-
-```sh
-cp bison++.exe bison.exe
-make install
-```
-
-Verify both generators:
-
-```sh
-/c/tmp/minerva-parser-tools/install/bin/bison++ -V
-flex++ --version
-```
-
-Expected version output includes:
-
-```text
-bison++ Version 1.21.9-1
-flex++ 2.6.4
-```
-
-### 5. Generate Minerva's MSL C++ files
-
-Stay in the MSYS2 UCRT64 terminal. Change to the repository root and keep
-`/ucrt64/bin` on `PATH` because the locally built Bison++ executable needs the
-UCRT runtime DLLs:
-
-```sh
-cd /c/path/to/Minerva
-export PATH=/ucrt64/bin:/usr/bin
-```
-
-Generate the parser implementation and header:
-
-```sh
-/c/tmp/minerva-parser-tools/install/bin/bison++ \
-    -d \
-    -hinclude/Kernel/Parsers/MSLParser.h \
-    -o source/Kernel/Parsers/MSLParser.cpp \
-    source/Kernel/Parsers/MSLParser.y
-```
-
-Generate the C++ scanner:
-
-```sh
-flex++ \
-    -d \
-    -osource/Kernel/Parsers/MSLScanner.cpp \
-    source/Kernel/Parsers/MSLScanner.l
-```
-
-These commands create or replace exactly these committed files:
-
-```text
-include/Kernel/Parsers/MSLParser.h
-source/Kernel/Parsers/MSLParser.cpp
-source/Kernel/Parsers/MSLScanner.cpp
-```
-
-The verified grammar generation reports one empty typed rule, one useless
-nonterminal/rule, six shift/reduce conflicts, and forty reduce/reduce
-conflicts. Those diagnostics come from the existing grammar and are not a
-generator failure.
-
-### 6. Generate through CMake
-
-After the tools are available, configure and invoke the dedicated target:
-
-```powershell
-cmake --preset visual-studio-debug
-cmake --build --preset visual-studio-debug --target minerva_generate_msl
-```
-
-The MSYS2 equivalent is:
-
-```powershell
-cmake --preset windows-msys2-debug
-cmake --build --preset windows-msys2-debug --target minerva_generate_msl
-```
-
-CMake searches `PATH` and also checks the verified Windows locations under
-`C:\tmp\minerva-parser-tools\install\bin` and `C:\msys64\usr\bin`. Reconfigure
-after installing tools so cached `NOTFOUND` results are refreshed. Invoking the
-target explicitly always regenerates all three outputs. When an output is
-missing, the target runs as part of the normal build if both tools were found.
-
-Run `git diff` after regeneration. Do not add the generated sources to a CMake
-target in isolation: compiling their semantic actions also requires the World,
-ResourcesManager, MAOFactory, MLBFactory, and PhysicsController dependency
-chains. They will be activated when those engine domains have reached the
-gradual build.
-
-## Gradual compilation roadmap
-
-The restoration build should remain cumulative: a phase is added only after
-all earlier phases compile and test with both the Visual Studio and MSYS2
-presets. The goal is compilation compatibility, not redesign or new behavior.
-No phase requires sample scenes, models, scripts, or other application assets.
-
-Bundles A through M are active and verified. Bundle N is next.
-The remaining roadmap is grouped by external dependency transitions instead of
-single translation units. Every bundle must compile and test as one change on
-both toolchains before introducing the next dependency set. A bundle marked
-"none" uses only libraries activated by earlier bundles.
-
-The fourteen bundles below partition the 60 original restoration translation
-units exactly once.
-
-### Bundle A: current-stack closure (20 units)
-
-New external requirement: none. This bundle is active and verified in the
-current working tree.
-
-- Core MAO: `MAOMarksGroup.cpp`.
-- Logic base: `MLB.cpp`, `MLBSensor.cpp`, `MLBSensorActuator.cpp`, and
-  `MLBActuator.cpp`.
-- Current-stack sensors: `MLBSensorAlways.cpp`, `MLBSensorDelay.cpp`,
-  `MLBSensorProperty.cpp`, and `MLBSensorRandom.cpp`.
-- Current-stack actuators: `MLBActuatorAng.cpp`, `MLBActuatorDistance.cpp`,
-  `MLBActuatorProperty.cpp`, `MLBActuatorQuitApp.cpp`,
-  `MLBActuatorRandom.cpp`, and `MLBActuatorRelativePose.cpp`.
-- Boolean control: `MLBController.cpp`, `MLBControllerAND.cpp`,
-  `MLBControllerNAND.cpp`, `MLBControllerNOR.cpp`, and `MLBControllerOR.cpp`.
-
-These units use only the standard library and the already-active
-Boost.Filesystem, embedded Python/Boost.Python, OpenCV Core, resource, property,
-and MAO foundations. Obsolete include spellings may still require
-compiler-proven compatibility edits, but no package installation is needed.
-
-### Bundle B: SDL input foundation (2 units)
-
-New external requirement: an SDL 1.2-compatible development/runtime package.
-
-This bundle is active and verified.
-
-- `InputEventController.cpp`.
-- `MLBSensorKeyboard.cpp`.
-
-The code uses SDL 1.2 event and key APIs; substituting SDL2 would be an API
-migration, not a dependency-only restoration.
-
-### Bundle C: 3D and collision foundation (8 units)
-
-New external requirements: desktop compatibility OpenGL and the vendored
-Bullet 2.78 collision/dynamics headers and libraries.
-
-This bundle is active and verified.
-
-- `MAORenderable3D.cpp`, `MAORenderable3DLine.cpp`,
-  `MAORenderable3DModel.cpp`, and `MAORenderable3DPath.cpp`.
-- `MLBActuatorAnim.cpp`, `MLBActuatorChangePose.cpp`,
-  `MLBActuatorPathAddPoint.cpp`, and `MLBActuatorPathRemovePoints.cpp`.
-
-The 3D base exposes Bullet collision types directly, so OpenGL-only and
-Bullet-only compilation phases cannot be separated without changing public
-headers.
-
-### Bundle D: 2D image rendering (3 units)
-
-New external requirement: SDL_image. SDL and OpenGL come from bundles B and C.
-
-This bundle is active and verified in the Visual Studio preset, root Visual
-Studio build, and MSYS2 preset. All three flows pass 96 tests, including a
-real SDL_image load and OpenGL texture generation test.
-
-- `MAORenderable2D.cpp` and `MAORenderable2DImage.cpp`.
-- `MLBActuatorVisibility.cpp`, which is unblocked only after both 2D and 3D
-  renderable bases exist.
-
-### Bundle E: native model parsers (3 units)
-
-New external requirement: none; SDL_image, OpenGL, resources, and the 3D model
-class are already active.
-
-This bundle is active and verified in the Visual Studio preset, root Visual
-Studio build, and MSYS2 preset. All three flows pass 98 tests. The parser tests
-load real OBJ and textured OreJ files under a real OpenGL context and verify
-scaled geometry through generated Bullet collision bounds.
-
-- `Parser.cpp`, `ParserOrej.cpp`, and `ParserObj.cpp`.
-
-### Bundle F: text rendering (1 unit)
-
-New external requirement: SDL_ttf.
-
-This bundle is active and verified in the Visual Studio preset, root Visual
-Studio build, and MSYS2 preset. All three flows pass 100 tests. The tests load
-a real TrueType font through the resource manager, render UTF-8 text under a
-real SDL/OpenGL context, regenerate its texture, and verify the legacy text
-properties.
-
-- `MAORenderable2DText.cpp`.
-
-### Bundle G: 3DS model parser (1 unit)
-
-New external requirement: lib3ds.
-
-This bundle is active and verified in the Visual Studio preset, root Visual
-Studio build, and MSYS2 preset. All three flows pass 102 tests. The tests
-generate their 3DS fixtures through lib3ds itself, then load geometry,
-animation state, materials, and a real resource-backed texture under an
-OpenGL context. No third-party model fixture is stored in the repository.
-
-- `Parser3ds.cpp`.
-
-### Bundle H: AR tracking (2 units)
-
-New external requirements: the vendored ARToolKit 2.72.1 libraries plus their
-desktop GLU/GLUT support. OpenGL and the mark classes are already active.
-
-This bundle is active and verified in the Visual Studio preset, root Visual
-Studio build, and MSYS2 preset. All three flows pass 105 tests. The tests
-construct and activate the real ARToolKit tracker, load a deterministic valid
-pattern through the resource path, and verify factory identity and inactive
-poll gating without a fake camera backend. Live camera/marker correctness and
-the legacy frame-format risks are recorded in FW-039.
-
-- `TrackingMethodARTK.cpp`.
-- `TrackingMethodFactory.cpp`.
-
-### Bundle I: MAO factory closure (1 unit)
-
-New external requirement: none. All concrete MAOs, model parsers, and tracking
-implementations are active by this point.
-
-This bundle is active and verified in the Visual Studio preset, root Visual
-Studio build, and MSYS2 preset. All three flows pass 108 tests. The tests cover
-typed registration and lookup, global-reference resolution, property lookup,
-linked-line construction, duplicate and missing-object errors, and ownership
-of a standalone instantiated renderable. The broader raw-pointer ownership
-and transactional-creation risks are recorded in FW-040.
-
-- `MAOFactory.cpp`.
-
-### Bundle J: physics closure (4 units)
-
-New external requirement: none; Bullet, OpenGL, and GLUT were introduced by
-bundles C and H.
-
-This bundle is active and verified in the Visual Studio preset, root Visual
-Studio build, and MSYS2 preset. All three flows pass 116 tests. The tests cover
-debug-drawer state and safe no-op callbacks, static and dynamic rigid-body
-construction, offset/impulse state, controller and ground initialization,
-static/dynamic body registration and removal, and overlapping/separated box
-collision. The broader controller, Bullet, collision, OpenGL, and ownership
-risks are recorded in FW-041.
-
-- `GLDebugDrawer.cpp`, `PhysicObject.cpp`, `PhysicDynamicObject.cpp`, and
-  `PhysicsController.cpp`.
-
-The physics controller depends on `MAOFactory`, so these units cannot move into
-the earlier Bullet bundle without breaking the internal dependency order.
-
-### Bundle K: audio and world (2 units)
-
-New external requirement: SDL_mixer. SDL_ttf, OpenGL/GLU/GLUT, physics, and the
-factories are already active.
-
-This bundle is active and verified in the Visual Studio preset, root Visual
-Studio build, and MSYS2 preset. All three flows pass 118 tests. The sound test
-loads and plays a generated one-second WAV through the resource manager and a
-real SDL_mixer dummy-audio device. The world test creates a real SDL/OpenGL
-screen, initializes TTF and mixer, and verifies the legacy logical versus
-hard-coded surface dimensions and application state. Lifecycle, validation,
-rendering-state, frame-format, and sound ownership risks are recorded in
-FW-042.
-
-- `MLBActuatorSound.cpp`.
-- `World.cpp`.
-
-### Bundle L: engine and Python closure (8 units)
-
-New external requirement: none.
-
-This bundle is active and verified in the Visual Studio preset, root Visual
-Studio build, and MSYS2 preset. All three flows pass 125 tests. Seven focused
-tests cover near and collision sensors, dynamic-object actuator configuration,
-factory creation/linking, script compilation, Python module access, and a full
-sensor/controller/actuator game-logic poll.
-
-The compatibility changes replace the obsolete `<python.hpp>` spelling,
-replace an MSVC-incompatible variable-length script buffer, use the Python 3
-module initializer and current `PyEval_EvalCode` signature, and give the
-compiled Python object its returned-reference ownership. Native tests receive
-`PYTHONHOME` from vcpkg's package-owned interpreter directory so embedded
-Debug Python can find its standard library. No third-party source was changed.
-Deferred factory, sensor, dynamic-instantiation, Python, and game-loop risks
-are recorded in FW-043.
-
-- `MLBSensorCollision.cpp`, `MLBSensorNear.cpp`, and
-  `MLBActuatorAddDynamicObject.cpp`.
-- `MLBControllerScript.cpp` and `MLBFactory.cpp`.
-- `MGEModule.cpp`, `MPYWrapper.cpp`, and `GameLogicController.cpp`.
-
-This is an intentionally ordered closure: the concrete physics/factory bricks
-precede the script controller, the complete MLB set precedes `MLBFactory`, and
-both factories precede the full Python wrapper and game-logic controller.
-
-### Bundle M: generated MSL frontend (3 units)
-
-New external requirement: a cross-toolchain-accessible `FlexLexer.h` runtime
-header. The already-installed `flex++` and `bison++` generators are needed only
-when regenerating the committed outputs.
-
-This bundle is active and verified in the Visual Studio preset, root Visual
-Studio build, and MSYS2 preset. All three flows pass 127 tests. The focused
-tests cover parser-property defaults/merging and representative application,
-renderable, color, scalar, and global-reference semantic actions.
-
-CMake compiles the committed Bison++/Flex++ outputs in class mode and locates
-the installed MSYS2 Flex runtime header for both toolchains. The obsolete
-OpenCV include was replaced consistently in the grammar and generated files;
-the scanner avoids a duplicate Flex class declaration. MSVC-only options keep
-the historical Bison++ string-literal signature and suppress Flex's POSIX
-`unistd.h` include. The outputs were not regenerated and no third-party source
-was changed. Deferred grammar, parser-state, ownership, validation, and error
-handling risks are recorded in FW-044.
-
-- `MSLProperties.cpp`, `MSLParser.cpp`, and `MSLScanner.cpp`.
-
-Their semantic actions require `World`, both factories, physics, MAO
-properties, and the complete Bullet/OpenCV stack, so compiling generated files
-earlier would not be a real dependency reduction.
-
-### Bundle N: original executables (2 units)
-
-New external requirement: none.
-
-- `minerva.cpp`.
-- `player.cpp`.
-
-These are final executable targets, not members of `minerva_kernel`; they enter
-only after every runtime and authoring subsystem is active.
-
-Some bundles are necessarily clusters because original headers expose concrete
-types or form factory/controller cycles. Splitting those clusters would require
-architectural test seams or public-header refactors, which are outside the
-compilation-first restoration methodology.
-
-## Visual Studio Code
-
-The repository includes CMake presets and workspace configuration for the
-MSYS2 UCRT64 compiler installed under `C:\msys64`.
-
-1. Open the repository folder in VS Code.
-2. Install the recommended **CMake Tools** and **C/C++** extensions when VS
-   Code offers them.
-3. Select `Windows MSYS2 UCRT64 (Debug)` if CMake Tools asks for a configure
-   preset.
-4. Press `Ctrl+Shift+B` to configure and build.
-
-The status bar and Command Palette also expose the normal CMake Tools
-`Configure`, `Build`, and `Test` actions. The following workspace tasks are
-available through **Terminal: Run Task**:
-
-- `CMake: Configure (Debug)`
-- `CMake: Build (Debug)`
-- `CMake: Test (Debug)`
-- `CMake: Run smoke check`
-
-The Debug executable is written to:
-
-```text
-build/windows-msys2-debug/minerva_smoke.exe
-```
-
-The generated `compile_commands.json` supplies accurate include paths and
-compiler flags to IntelliSense through CMake Tools.
-
-## Visual Studio 2026
-
-Visual Studio has its own CMake integration; the `.vscode` files are not used
-by it. Open the repository directory with **File > Open > Folder**. Do not open
-the generated `.vs/Minerva.slnx` file directly.
-
-Visual Studio should select `Visual Studio 2026 x64 (Debug)` from
-`CMakePresets.json`. If it selects another preset, choose the Visual Studio
-preset from the configuration dropdown. After CMake generation finishes,
-`Ctrl+B` builds the active CMake configuration.
-
-The Debug executable is written to:
-
-```text
-build/visual-studio-debug/Debug/minerva_smoke.exe
-```
-
-If Visual Studio shows **No Configurations**, use
-**Project > CMake Workspace Settings**, enable CMake for the workspace, and
-then select **Project > Delete Cache and Reconfigure**. Visual Studio stores
-this per-workspace choice in the ignored `.vs/CMakeWorkspaceSettings.json`
-file.
-
-The equivalent command-line flow is:
+Configure, build, and test Debug:
 
 ```powershell
 cmake --preset visual-studio-debug
@@ -596,63 +76,123 @@ cmake --build --preset visual-studio-debug
 ctest --preset visual-studio-debug
 ```
 
-To compile and run every active test from the IDE, open Visual Studio's
-**CMake Targets View**, right-click `minerva_tests`, and select **Build**. This
-target builds `minerva_smoke` and `minerva_kernel_tests`, then runs CTest with
-the active Visual Studio configuration and displays failures in the build
-output. The generator-provided `RUN_TESTS` target performs the same CTest run,
-but `minerva_tests` is the project-specific target to use.
+Release:
 
-The kernel unit tests use GoogleTest 1.17.0. When `BUILD_TESTING` is enabled,
-CMake first uses an installed GoogleTest package if one is available;
-otherwise it downloads the pinned source into the selected build directory.
-This does not install GoogleTest system-wide. The first test-enabled configure
-therefore requires network access when GoogleTest is not already installed.
+```powershell
+cmake --preset visual-studio-release
+cmake --build --preset visual-studio-release
+ctest --preset visual-studio-release
+```
 
-CTest dashboard projects such as `Continuous`, `Nightly`, and `Experimental`
-are intentionally disabled. `ALL_BUILD`, `RUN_TESTS`, and `ZERO_CHECK` are
-generated by Visual Studio's CMake generator and remain as infrastructure.
-The original `minerva` authoring executable and `player` runtime will be added
-only after their dependency phases compile; placeholder targets would give a
-false impression that those applications are currently buildable.
+To build every production frontend and immediately run the complete test
+suite:
 
-## Windows with the existing MSYS2 installation
+```powershell
+cmake --build --preset visual-studio-debug --target minerva_tests -- /m:1
+```
 
-Configure:
+The explicit `/m:1` is useful on constrained machines because the legacy
+translation units and debug program databases can make parallel MSBuild
+invocations resource-intensive.
+
+### Visual Studio IDE
+
+Open the repository with **File > Open > Folder** and select the
+`Visual Studio 2026 x64 (Debug)` CMake preset. `Ctrl+B` builds the selected
+configuration. In CMake Targets View, build `minerva_tests` to compile all
+frontends and run CTest.
+
+If Visual Studio reports no CMake configuration, enable CMake in
+**Project > CMake Workspace Settings**, then use
+**Project > Delete Cache and Reconfigure**.
+
+## MSYS2 UCRT64
+
+Install MSYS2 at `C:\msys64`, then install the compiler, build tools, Flex
+runtime, and matching UCRT64 dependencies:
+
+```powershell
+C:\msys64\usr\bin\pacman.exe --noconfirm -S --needed flex make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-freeglut mingw-w64-ucrt-x86_64-gtest mingw-w64-ucrt-x86_64-opencv mingw-w64-ucrt-x86_64-SDL mingw-w64-ucrt-x86_64-SDL_image mingw-w64-ucrt-x86_64-SDL_mixer mingw-w64-ucrt-x86_64-SDL_ttf
+```
+
+Configure, build, and test Debug:
 
 ```powershell
 cmake --preset windows-msys2-debug
-```
-
-Build:
-
-```powershell
 cmake --build --preset windows-msys2-debug
-```
-
-Run:
-
-```powershell
-.\build\windows-msys2-debug\minerva_smoke.exe
-```
-
-Run the CMake test:
-
-```powershell
 ctest --preset windows-msys2-debug
 ```
 
-The smoke executable can also preprocess an MSL file without invoking the
-generated parser:
+Release:
 
 ```powershell
-.\build\windows-msys2-debug\minerva_smoke.exe path\to\application.mrv
+cmake --preset windows-msys2-release
+cmake --build --preset windows-msys2-release
+ctest --preset windows-msys2-release
 ```
+
+To build every frontend and run the complete suite with limited parallelism:
+
+```powershell
+cmake --build --preset windows-msys2-debug --target minerva_tests -j 2
+```
+
+Do not mix MSYS2 headers, import libraries, or runtime DLLs with the vcpkg
+MSVC dependency family.
+
+## Running from the build tree
+
+MSYS2 Debug:
+
+```powershell
+.\build\windows-msys2-debug\minerva_smoke.exe
+.\build\windows-msys2-debug\minerva_smoke.exe path\to\application.mrv
+.\build\windows-msys2-debug\minerva.exe path\to\application.mrv
+.\build\windows-msys2-debug\player.exe
+```
+
+Visual Studio Debug:
+
+```powershell
+.\build\visual-studio-debug\Debug\minerva_smoke.exe
+.\build\visual-studio-debug\Debug\minerva_smoke.exe path\to\application.mrv
+.\build\visual-studio-debug\Debug\minerva.exe path\to\application.mrv
+.\build\visual-studio-debug\Debug\player.exe
+```
+
+`minerva_smoke` without arguments performs a core lifecycle check. With one
+MSL path, it prints the preprocessed source without invoking the full parser or
+hardware stack.
+
+The `minerva` frontend initializes the engine, preprocesses and parses the MSL
+file, writes `data.dat`, and attempts to copy the player as `app`. The `player`
+expects the package in its application directory and immediately initializes
+Python, SDL/OpenGL, camera input, AR tracking, physics, input, audio, and game
+logic.
+
+## Testing
+
+CTest discovers the GoogleTest cases from `minerva_kernel_tests` and also runs
+the smoke and command-line checks:
+
+```powershell
+ctest --preset visual-studio-debug
+ctest --preset windows-msys2-debug
+```
+
+Run one test by name:
+
+```powershell
+ctest --test-dir build/windows-msys2-debug -R "MSLParserTest" --output-on-failure
+```
+
+The automated suite does not launch `player`, because a deterministic player
+run requires a packaged application plus camera, graphics, audio, and tracking
+hardware.
 
 ## Other CMake environments
 
-Use the normal configure/build flow with an available C++17 compiler and CMake
-generator:
+The generic flow is:
 
 ```sh
 cmake -S . -B build
@@ -660,7 +200,102 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Boost.Filesystem, Boost.Python, embedded Python, libzip, the OpenCV Core and
-Video I/O components, SDL 1.2, SDL_image 1.2, SDL_ttf 2.0.11, FreeType, and
-desktop OpenGL must be discoverable by CMake. For custom build trees, pass the
-appropriate vcpkg toolchain or package prefix described above.
+All required packages must be discoverable by CMake, and their compiler,
+architecture, runtime, and Debug/Release families must match. The supplied
+Windows presets are the only configurations currently verified.
+
+If vcpkg or MSYS2 is installed somewhere other than the preset paths, use a
+user preset or configure manually with the appropriate
+`CMAKE_TOOLCHAIN_FILE`, `CMAKE_PREFIX_PATH`, compiler, generator, and triplet.
+Do not commit machine-local paths to the shared presets.
+
+## MSL parser generation
+
+Normal builds compile the committed generated files and do not require
+Bison++ or parser regeneration. They do require the Flex C++ runtime header
+`FlexLexer.h`.
+
+Only regenerate after changing:
+
+- `source/Kernel/Parsers/MSLParser.y`; or
+- `source/Kernel/Parsers/MSLScanner.l`.
+
+The grammar uses the historical Bison++ dialect, not modern GNU Bison's C++
+interface. Reproducible output requires:
+
+- Bison++ 1.21.11 with Debian's 1.21.11-5 portability patches; and
+- Flex/Flex++ 2.6.4.
+
+After making both executables discoverable by CMake, reconfigure and run:
+
+```powershell
+cmake --build --preset windows-msys2-debug --target minerva_generate_msl
+```
+
+The target rewrites:
+
+```text
+include/Kernel/Parsers/MSLParser.h
+source/Kernel/Parsers/MSLParser.cpp
+source/Kernel/Parsers/MSLScanner.cpp
+```
+
+Review the complete generated diff before committing it. The existing grammar
+reports shift/reduce and reduce/reduce conflicts; these diagnostics are known,
+but newly introduced diagnostics should be investigated.
+
+## Installation and deployment
+
+The project does not currently define CMake `install()` or packaging rules.
+There is therefore no separate system-install procedure.
+
+Run tools from their build directory during development. A deployable player
+needs more than `player.exe`: it also needs a valid `data.dat`, matching
+runtime libraries for the selected toolchain, camera and graphics/audio
+support, and any application-specific calibration or resource files.
+
+## Troubleshooting
+
+### `FlexLexer.h` was not found
+
+Install the MSYS2 `flex` package or configure with a compatible Flex 2.6.4
+include directory. The committed scanner still includes this runtime header.
+
+### A dependency is found from the wrong toolchain
+
+Delete the affected build directory or CMake cache, then reconfigure with the
+correct preset. Do not place both vcpkg and MSYS2 dependency directories on the
+same CMake search path.
+
+### lib3ds or GoogleTest cannot be downloaded
+
+Check network/proxy access or populate CMake's FetchContent cache in advance.
+lib3ds is always fetched; GoogleTest is fetched only when no installed package
+is found.
+
+### Embedded Python cannot find `encodings`
+
+Run tests through CTest. Native test properties set `PYTHONHOME` from the
+vcpkg Python installation. If running the test executable directly, set
+`PYTHONHOME` to the matching interpreter directory first.
+
+### The player cannot open a camera
+
+The legacy runtime opens camera device 0. Confirm that a camera is present,
+available to desktop applications, and supported by the selected OpenCV
+backend.
+
+### Visual Studio reports SDLmain runtime or PDB warnings
+
+Debug builds currently warn that the package-provided SDLmain object uses the
+release CRT and has no matching PDB. The binaries link and command-line smoke
+test successfully, but this packaging limitation remains unresolved. Do not
+silence it with `/NODEFAULTLIB` unless the full runtime combination has been
+validated.
+
+### An MSL or resource error terminates the process
+
+Several legacy parser and resource paths still use process termination for
+error reporting. Validate input paths and MSL syntax before running the full
+authoring frontend, and use `minerva_smoke <file>` to inspect preprocessing
+separately.

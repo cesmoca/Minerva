@@ -355,10 +355,26 @@ add_executable(minerva_smoke
 
 target_link_libraries(minerva_smoke PRIVATE minerva_kernel)
 
+add_executable(minerva
+    source/minerva.cpp
+)
+
+target_link_libraries(minerva PRIVATE minerva_kernel)
+
+add_executable(player
+    source/player.cpp
+)
+
+target_link_libraries(player PRIVATE minerva_kernel)
+
 if(MSVC)
     target_compile_options(minerva_smoke PRIVATE /W4 /permissive- /EHsc)
+    target_compile_options(minerva PRIVATE /W4 /permissive- /EHsc)
+    target_compile_options(player PRIVATE /W4 /permissive- /EHsc)
 else()
     target_compile_options(minerva_smoke PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(minerva PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(player PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 option(BUILD_TESTING "Build Minerva tests" ON)
@@ -366,6 +382,17 @@ option(BUILD_TESTING "Build Minerva tests" ON)
 if(BUILD_TESTING)
     enable_testing()
     add_test(NAME minerva.smoke COMMAND minerva_smoke)
+    set(MINERVA_USAGE_TEST_DIRECTORY
+        ${CMAKE_CURRENT_BINARY_DIR}/tests/minerva-usage
+    )
+    file(MAKE_DIRECTORY ${MINERVA_USAGE_TEST_DIRECTORY})
+    add_test(
+        NAME minerva.usage
+        COMMAND ${CMAKE_COMMAND}
+            -DMINERVA_EXECUTABLE=$<TARGET_FILE:minerva>
+            -DMINERVA_WORKING_DIRECTORY=${MINERVA_USAGE_TEST_DIRECTORY}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cmake/VerifyMinervaUsage.cmake
+    )
 
     find_package(GTest CONFIG QUIET)
     if(NOT GTest_FOUND)
@@ -459,7 +486,7 @@ if(BUILD_TESTING)
 
     add_custom_target(minerva_tests
         COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>
-        DEPENDS minerva_smoke minerva_kernel_tests
+        DEPENDS minerva minerva_smoke player minerva_kernel_tests
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         USES_TERMINAL
     )

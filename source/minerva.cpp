@@ -8,10 +8,15 @@
 #include <Kernel/Parsers/MSLParser.h>
 #include <Kernel/Parsers/MSLPreprocessor.h>
 #include <string>
-#include <unistd.h>
 #include <sstream>
 #include <MPY/MPYWrapper.h>
 #include <boost/filesystem.hpp>
+
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 
 using namespace std;
 
@@ -121,7 +126,7 @@ int main(int argc, char* argv[]) {
 			string sourceDir = workingDir + "/" + minervaBinaryDir + "/player";
 			string destDir = workingDir + "/" + sourceCodeDir;
 			boost::filesystem::copy_file(sourceDir, "./app",
-					boost::filesystem::copy_option::overwrite_if_exists);
+					boost::filesystem::copy_options::overwrite_existing);
 
 		} catch (string e) {
 			cout << "Exception: " << e << endl;

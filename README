@@ -1,146 +1,118 @@
+# Minerva
 
-    /|    //| |
-   //|   // | |    ( )   __      ___      __              ___
-  // |  //  | |   / / //   ) ) //___) ) //  ) ) ||  / / //   ) )
- //  | //   | |  / / //   / / //       //       || / / //   / /
-//   |//    | | / / //   / / ((____   //        ||/ / ((___( (
+Minerva is a legacy augmented-reality engine built around MSL (Minerva
+Specification Language). An MSL application describes scene objects,
+rendering, tracking, physics, sensors, controllers, actuators, sounds, and
+Python-backed game logic.
 
-** Building Augmented Reality apps has never been so easy! **
+The repository currently builds the complete engine and its original
+frontends:
 
--César Mora Castro.-
+- `minerva` preprocesses and parses an MSL source file, creates the legacy
+  `data.dat` application package, and prepares a player executable.
+- `player` loads a packaged application and runs its camera, tracking,
+  physics, input, logic, audio, and rendering loop.
+- `minerva_smoke` checks core initialization or prints preprocessed MSL.
+- `minerva_kernel_tests` contains the automated engine test suite.
 
-http://theminervaproject.wordpress.com
-http://sourceforge.net/projects/minervaproject
+## Current platform support
 
-**************************
-* What is Minerva?
-**************************
-Minerva is a framework that provides a high level language (called MSL - Minerva
-Specification Language) to specify the logic of Augmented Reality applications.
-Minerva offers too a platform to interpret that language and execute the apps.
+The maintained and tested configurations are Windows x64 using either:
 
-Some feautres of Minerva are:
- -3D Geometry and texturing from metaformat.
- -2D Images and Text.
- -Physic Simulation.
- -Sounds playing.
- -Multi-Tracking method abstract layer. Currently implemented with ARToolKit.
- -Scripting language with Python, using the module MGE (Minerva Game Engine).
+- Visual Studio 2026 with vcpkg static dependencies; or
+- MSYS2 UCRT64 with matching MSYS2 packages.
 
-If you feel you like to test or colaborate with Minerva, contact its author:
+The engine uses C++17 and CMake 3.20 or newer. Other platforms and toolchains
+may work, but they are not currently verified by this repository.
 
- César Mora Castro <cesarmoracastro@gmail.com>
+## Quick start
 
-Thanks!
+Install the dependencies described in [BUILDING.md](BUILDING.md), then choose
+one of the supplied presets.
 
-**************************
-* Minerva's Readme
-**************************
+Visual Studio:
 
-In this document you will find explanations of how to compile Minerva in
-GNU/Linux and Microsoft Windows platforms. You will find a troubleshooting
-section as well.
+```powershell
+cmake --preset visual-studio-debug
+cmake --build --preset visual-studio-debug
+ctest --preset visual-studio-debug
+```
 
+MSYS2 UCRT64:
 
-****************************
-* Compile on GNU/Linux
-****************************
+```powershell
+cmake --preset windows-msys2-debug
+cmake --build --preset windows-msys2-debug
+ctest --preset windows-msys2-debug
+```
 
-1/ Minerva has been thought to be easy-instalable. No patchs or hacks are
-needed. The first of all is to install the library dependencies:
+The complete setup, Release presets, target list, troubleshooting guidance,
+and parser-regeneration instructions are in [BUILDING.md](BUILDING.md).
 
-  $ sudo apt-get install cmake bison++ libsdl1.2-dev libsdl-gfx1.2-dev
-  libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-sound1.2-dev
-  libsdl-ttf2.0-dev libcv-dev libhighgui-dev libboost-python-dev python2.6-dev
-  freeglut3-dev libboost-filesystem-dev
+## Running the tools
 
+Run the core smoke check:
 
-2/ To compile evertyhing, type:
-   $ make
+```powershell
+.\build\windows-msys2-debug\minerva_smoke.exe
+```
 
-3/ Minerva needs somen files to work in your system. In the Minerva directory,
-there are one called "usr". Copy it to your system:
+Print the preprocessed form of an MSL file without running the full engine:
 
-   $ sudo cp -R usr /
+```powershell
+.\build\windows-msys2-debug\minerva_smoke.exe path\to\application.mrv
+```
 
- Finished! If everything went right, we just have Minerva ready to use! From the
-root directory try this (you should have a camera in /dev/video0):
+Build a legacy application package:
 
-   $ ./bin/minerva examples/ARSheep/ARSheep.mrv
+```powershell
+.\build\windows-msys2-debug\minerva.exe path\to\application.mrv
+```
 
+Run a packaged application:
 
-Enjoy your own Augmented Reality Applications!
+```powershell
+.\build\windows-msys2-debug\player.exe
+```
 
+Visual Studio binaries are under
+`build\visual-studio-debug\Debug` instead. The player expects `data.dat` in
+its application directory and requires suitable camera, graphics, audio, and
+tracking resources.
 
-*********************
-* Compile on Windows
-*********************
+## Engine capabilities
 
-Minerva has been build using Visual Studio C++ 2010. Just open the
-solution file, with
-.sln extension, and compile it!
+Minerva includes:
 
-The static shared libraries are already in libwin32.
+- 2D images and TrueType text;
+- 3D OBJ, OreJ, and 3DS models;
+- OpenGL rendering and Bullet physics;
+- SDL input, image, text, and audio integration;
+- ARToolKit marker tracking over OpenCV camera frames;
+- sensor/controller/actuator game logic;
+- embedded Python scripting through the MGE module; and
+- MSL preprocessing, parsing, resource collection, and ZIP packaging.
 
-The dynamic shared libraries are in dynamiclibwin32, and they should
-be copied to the
-binary directory (i.e. Release\) or to C:\Windows\system32
+## Known limitations
 
-Once compiled, Minerva need some files to work in your system. Create
-the directory:
+- There is no CMake install or deployment target yet. Run from the build tree;
+  copying an executable alone does not produce a complete runtime.
+- No ready-to-run sample application or camera calibration package is
+  currently included.
+- `player` requires real camera and graphics/audio hardware and is not launched
+  by the automated test suite.
+- The legacy authoring frontend has path and executable-discovery limitations,
+  particularly with spaces, long paths, and Visual Studio multi-configuration
+  output directories.
+- Invalid MSL and missing resources can terminate the process instead of
+  returning a recoverable diagnostic.
+- Visual Studio Debug builds currently warn about the package-provided SDLmain
+  runtime and missing SDLmain debug symbols.
+- The codebase retains legacy ownership and lifecycle behavior. Treat it as
+  experimental when loading untrusted files or embedding it in another
+  process.
 
-   C:\Minerva\data
+## License
 
-In the source directory, copy the file contained in
-usr/share/minerva/data/camera_para.dat to C:\Minerva\data
-
-
-******************
-* Troubleshooting
-******************
-
-If an applications does not work propertly, the first step is checking
-the console looking for warning or error messages that can be helpful.
-Here are some commons mistakes:
-
-
-* ARGUMENTS ERROR! *
---------------------------------------------------------------------------
-
-In order to run an Augmented Reality application, you should tell Minerva
-what is the application file with extension .mrv.
-
-There are two ways to do it:
-
- 1/ If you compile Minerva from source, in the source directory type:
-
-   $ ./bin/minerva <application file>
-
- 2/ If you installed it from a .deb package:
-
-   $ minerva <application file>
-
-
-
-* Exception: Camera not found exception: cam*
---------------------------------------------------------------------------
-  Minerva is not able to use your camera. Is it properly plugged?
-  In GNU/Linux platforms it should be in /dev/video0.
-
-
-
-* [ERROR] Unable to init ARToolKit *
---------------------------------------------------------------------------
-  Minerva is not able to permorf the tracking method due to it
-  could not initialize it. That usually is because Minerva did not find
-  the camera_para.dat file, when Minerva was compiled from source.
-
-  Please, check that you follow properly all the steps below to compile
-  Minerva.
-
-
-
-
---------------------------------------------------------------------------
- Minerva: Building Augmented Reality apps has never been so easy!
---------------------------------------------------------------------------
+Minerva is distributed under the GNU General Public License, version 3 or
+later. See [LICENSE](LICENSE).
