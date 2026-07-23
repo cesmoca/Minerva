@@ -180,6 +180,7 @@ endif()
 # excluded until their prerequisite phases are stable.
 add_library(minerva_kernel STATIC
     source/Controllers/InputEventController.cpp
+    source/Factories/MAOFactory.cpp
     source/Factories/TrackingMethodFactory.cpp
     source/Factories/VideoFactory.cpp
     source/Kernel/EndController.cpp
@@ -321,6 +322,7 @@ if(BUILD_TESTING)
 
     add_executable(minerva_kernel_tests
         tests/Controllers/InputEventControllerTests.cpp
+        tests/Factories/MAOFactoryTests.cpp
         tests/Factories/VideoFactoryTests.cpp
         tests/Kernel/EndControllerTests.cpp
         tests/Kernel/LoggerTests.cpp

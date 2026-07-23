@@ -4,13 +4,14 @@ Minerva is being restored in stages. The current CMake build compiles the
 completed standard-library baseline and resource I/O phase plus the
 value/property, camera, Python binding, core MAO/logic foundations, SDL input,
 3D collision/rendering foundations, 2D image rendering, and native OreJ/OBJ
-and 3DS model parsing, 2D TrueType text rendering, and ARToolKit tracking:
+and 3DS model parsing, 2D TrueType text rendering, ARToolKit tracking, and the
+MAO factory:
 
 - `minerva_kernel`, containing the logger, application end controller, path and
   abstract tracking state, MSL include preprocessor, resource classes,
   `MAOValue`, `MAOProperty`, `VideoSource`, `VideoFactory`, `WrapperTypes`, the
   active MAO/MLB classes, `InputEventController`, `MLBSensorKeyboard`,
-  `TrackingMethodARTK`, and `TrackingMethodFactory`.
+  `TrackingMethodARTK`, `TrackingMethodFactory`, and `MAOFactory`.
 - `minerva_smoke`, a small executable that validates the compiled kernel.
 
 The generated MSL parser and scanner are committed to the repository, but they
@@ -19,8 +20,7 @@ depend on the world, resource, MAO, MLB, and physics domains. Keeping the files
 out of the baseline target avoids accidentally activating those subsystems.
 
 Physics controllers, scripting, audio, generated MSL parser implementation,
-the MAO factory, and the remaining renderer classes are not part of the target
-yet.
+and the remaining renderer classes are not part of the target yet.
 
 ## Active third-party dependencies
 
@@ -287,7 +287,7 @@ all earlier phases compile and test with both the Visual Studio and MSYS2
 presets. The goal is compilation compatibility, not redesign or new behavior.
 No phase requires sample scenes, models, scripts, or other application assets.
 
-Bundles A through H are active and verified. Bundle I is next.
+Bundles A through I are active and verified. Bundle J is next.
 The remaining roadmap is grouped by external dependency transitions instead of
 single translation units. Every bundle must compile and test as one change on
 both toolchains before introducing the next dependency set. A bundle marked
@@ -412,6 +412,13 @@ the legacy frame-format risks are recorded in FW-039.
 
 New external requirement: none. All concrete MAOs, model parsers, and tracking
 implementations are active by this point.
+
+This bundle is active and verified in the Visual Studio preset, root Visual
+Studio build, and MSYS2 preset. All three flows pass 108 tests. The tests cover
+typed registration and lookup, global-reference resolution, property lookup,
+linked-line construction, duplicate and missing-object errors, and ownership
+of a standalone instantiated renderable. The broader raw-pointer ownership
+and transactional-creation risks are recorded in FW-040.
 
 - `MAOFactory.cpp`.
 
