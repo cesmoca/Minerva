@@ -19,7 +19,7 @@ The default build creates:
 | `minerva_kernel` | Static engine library |
 | `minerva` | MSL authoring and packaging frontend |
 | `player` | Packaged-application runtime |
-| `minerva_smoke` | Core and MSL-preprocessor smoke utility |
+| `minerva_smoke` | Interactive runtime, core, and MSL-preprocessor smoke utility |
 | `minerva_kernel_tests` | GoogleTest executable |
 | `minerva_tests` | Builds every executable and runs CTest |
 | `minerva_generate_msl` | Regenerates the committed MSL parser and scanner |
@@ -56,7 +56,7 @@ The supplied preset expects:
 From the repository root, install the vcpkg dependencies:
 
 ```powershell
-C:\vcpkg\vcpkg.exe install boost-filesystem boost-python libzip freeglut gtest opencv4[core] sdl1 sdl1-image sdl1-mixer sdl1-ttf --triplet x64-windows-static-md --overlay-ports="$PWD\ports"
+C:\vcpkg\vcpkg.exe install boost-filesystem boost-python libzip freeglut gtest opencv4[core,dshow,msmf] sdl1 sdl1-image sdl1-mixer sdl1-ttf --triplet x64-windows-static-md --overlay-ports="$PWD\ports"
 ```
 
 The repository's `ports` directory supplies pinned SDL_image and SDL_ttf
@@ -146,6 +146,7 @@ MSYS2 Debug:
 
 ```powershell
 .\build\windows-msys2-debug\minerva_smoke.exe
+.\build\windows-msys2-debug\minerva_smoke.exe --core
 .\build\windows-msys2-debug\minerva_smoke.exe path\to\application.mrv
 .\build\windows-msys2-debug\minerva.exe path\to\application.mrv
 .\build\windows-msys2-debug\player.exe
@@ -155,14 +156,23 @@ Visual Studio Debug:
 
 ```powershell
 .\build\visual-studio-debug\Debug\minerva_smoke.exe
+.\build\visual-studio-debug\Debug\minerva_smoke.exe --core
 .\build\visual-studio-debug\Debug\minerva_smoke.exe path\to\application.mrv
 .\build\visual-studio-debug\Debug\minerva.exe path\to\application.mrv
 .\build\visual-studio-debug\Debug\player.exe
 ```
 
-`minerva_smoke` without arguments performs a core lifecycle check. With one
-MSL path, it prints the preprocessed source without invoking the full parser or
-hardware stack.
+`minerva_smoke` without arguments (or with `--runtime`) opens a window and
+exercises the resource-free portions of SDL/OpenGL, OpenCV, Bullet, ARToolKit,
+image/audio/font support, lib3ds, libzip, and Boost.Filesystem. It also tries
+camera device 0 and displays its frames when available; camera failure is
+non-fatal and leaves an animated background. Close the window or press Escape
+to exit, or use `--runtime <seconds>` for a bounded run. `--core` performs the
+deterministic lifecycle check used by CTest. With one MSL path, the utility
+prints the preprocessed source without invoking the full parser or hardware
+stack. On Windows, the smoke explicitly uses OpenCV's DirectShow backend
+because the Media Foundation hardware-accelerated path is known to hang during
+camera initialization on the currently tested system.
 
 The `minerva` frontend initializes the engine, preprocesses and parses the MSL
 file, writes `data.dat`, and attempts to copy the player as `app`. The `player`

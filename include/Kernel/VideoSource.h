@@ -16,7 +16,8 @@
 
 class VideoSource {
 public:
-	VideoSource(const std::string& name, const int& nDevice, int width = 640, int height = 480);
+	VideoSource(const std::string& name, const int& nDevice, int width = 640,
+			int height = 480, int apiPreference = cv::CAP_ANY);
 	virtual ~VideoSource();
 	cv::Mat* grabFrame();
 	cv::Mat* getLastFrame();

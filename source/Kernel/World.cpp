@@ -8,6 +8,7 @@
 #include <Kernel/World.h>
 
 World::World() {
+	_screen = NULL;
 }
 
 void World::initWorld(int width, int height) {
@@ -31,6 +32,12 @@ void World::initWorld(int width, int height) {
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	_screen = SDL_SetVideoMode(640, 480, 32, SDL_HWSURFACE | SDL_OPENGL
 			| SDL_HWPALETTE);
+	if (_screen == NULL) {
+		std::string error = "Unable to create SDL/OpenGL window: ";
+		error += SDL_GetError();
+		Logger::getInstance()->error(error);
+		throw error;
+	}
 
 	if (TTF_Init() == -1) { //Init font subsystem
 		Logger::getInstance()->error("Error initializing TTF subsystem.");
@@ -320,7 +327,7 @@ SDL_Surface& World::getScreen() {
 
 
 World::~World() {
-	SDL_Quit();
-	TTF_Quit();
 	Mix_CloseAudio();
+	TTF_Quit();
+	SDL_Quit();
 }

@@ -381,7 +381,7 @@ option(BUILD_TESTING "Build Minerva tests" ON)
 
 if(BUILD_TESTING)
     enable_testing()
-    add_test(NAME minerva.smoke COMMAND minerva_smoke)
+    add_test(NAME minerva.smoke COMMAND minerva_smoke --core)
     set(MINERVA_USAGE_TEST_DIRECTORY
         ${CMAKE_CURRENT_BINARY_DIR}/tests/minerva-usage
     )

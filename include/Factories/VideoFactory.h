@@ -17,7 +17,8 @@
 class VideoFactory: public Singleton<VideoFactory> {
 public:
 	VideoFactory();
-	void addVideoSource(const std::string& name, const int& nDevice);
+	void addVideoSource(const std::string& name, const int& nDevice,
+			int apiPreference = cv::CAP_ANY);
 	VideoSource& getCamera(const std::string& name);
 	VideoSource& getMainCamera();
 	void setMainCamera(const std::string& name);

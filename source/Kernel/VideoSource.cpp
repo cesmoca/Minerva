@@ -7,11 +7,15 @@
 
 #include <Kernel/VideoSource.h>
 
-VideoSource::VideoSource(const std::string& name, const int& nDevice, int width, int height) {
-	cv::VideoCapture* c = new cv::VideoCapture(nDevice);
+VideoSource::VideoSource(const std::string& name, const int& nDevice, int width,
+		int height, int apiPreference) {
+	cv::VideoCapture* c = new cv::VideoCapture(nDevice, apiPreference);
 	_cam = c;
 
 	if(!_cam->isOpened()){
+		_cam->release();
+		delete _cam;
+		_cam = NULL;
 		throw "Camera not found exception: "+name;
 	}
 
@@ -54,9 +58,11 @@ int VideoSource::getFps(){
 }
 
 VideoSource::~VideoSource() {
-#ifndef WIN32
-	delete _cam;
-#endif
+	if (_cam != NULL) {
+		_cam->release();
+		delete _cam;
+		_cam = NULL;
+	}
 
 	if(_lastFrame!=NULL)
 		delete _lastFrame;

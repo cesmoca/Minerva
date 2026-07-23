@@ -12,7 +12,8 @@ frontends:
   `data.dat` application package, and prepares a player executable.
 - `player` loads a packaged application and runs its camera, tracking,
   physics, input, logic, audio, and rendering loop.
-- `minerva_smoke` checks core initialization or prints preprocessed MSL.
+- `minerva_smoke` runs a resource-free engine and dependency demonstration,
+  performs a deterministic core check, or prints preprocessed MSL.
 - `minerva_kernel_tests` contains the automated engine test suite.
 
 ## Current platform support
@@ -51,10 +52,25 @@ and parser-regeneration instructions are in [BUILDING.md](BUILDING.md).
 
 ## Running the tools
 
-Run the core smoke check:
+Run the interactive runtime smoke:
 
 ```powershell
 .\build\windows-msys2-debug\minerva_smoke.exe
+```
+
+It opens an SDL/OpenGL window and initializes the resource-free portions of
+OpenCV, Bullet, ARToolKit, SDL_image, SDL_mixer, SDL_ttf, lib3ds, libzip, and
+Boost.Filesystem. Camera device 0 is tried and its frames are displayed when
+available; a missing or busy camera is reported as a non-fatal warning and the
+window shows an animated background instead. Close the window or press Escape
+to exit. Pass a duration for a bounded run, for example
+`minerva_smoke.exe --runtime 5`. The Windows smoke currently selects
+DirectShow explicitly due to a known Media Foundation initialization hang.
+
+Run the deterministic, hardware-independent core check used by CTest:
+
+```powershell
+.\build\windows-msys2-debug\minerva_smoke.exe --core
 ```
 
 Print the preprocessed form of an MSL file without running the full engine:
@@ -99,6 +115,8 @@ Minerva includes:
   copying an executable alone does not produce a complete runtime.
 - No ready-to-run sample application or camera calibration package is
   currently included.
+- The runtime smoke demonstrates subsystem initialization but does not load a
+  scene, render assets, run Python game logic, or perform marker detection.
 - `player` requires real camera and graphics/audio hardware and is not launched
   by the automated test suite.
 - The legacy authoring frontend has path and executable-discovery limitations,

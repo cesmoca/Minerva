@@ -36,10 +36,11 @@ void VideoFactory::setMainCamera(const std::string& name){
 
 }
 
-void VideoFactory::addVideoSource(const std::string& name, const int& nDevice){
+void VideoFactory::addVideoSource(const std::string& name, const int& nDevice,
+		int apiPreference){
 	VideoSource* vs;
 	try{
-		vs = new VideoSource(name,nDevice);
+		vs = new VideoSource(name,nDevice,640,480,apiPreference);
 
 	}catch(char const* e){
 		throw e;
